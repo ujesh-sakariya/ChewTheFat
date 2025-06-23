@@ -1,0 +1,94 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Register
+{% endblock %}
+
+
+<!-- Validation to ensure the correct format and that data is entered-->
+{% block head %}
+
+<script>
+    function validateForm() {
+        // set the variables for the username and passowrd
+        let user = document.forms["register"]["name"].value;
+        let pass = document.forms["register"]["psswd"].value;
+        let z = document.forms["register"]["email"].value;
+        // check if a username and passowrd is entered 
+        if (user == "") {
+            alert("Username must be filled out");
+            return false;
+        }
+            if (pass == "") {
+            alert("password must be filled out");
+            return false;
+        }
+
+        // creating a variable of all the special characters
+        var specialchar = "\~!@#$%^&*+=-[];,/{}|:<>?()/._";
+        var numbers = "0123456789";
+        var acceptable = false;
+        var acceptable2 = false;
+
+
+        // iterate through each character in the password
+            for (var i = 0; i < pass.length; i++)
+            {
+            // if the value for for any of the characters in password is in the string specialchar
+                if (specialchar.indexOf(pass.charAt(i)) != -1)
+                {
+                    acceptable = true;
+                }
+
+            // if the value for for any of the characters in password is in the string numbers
+                if (numbers.indexOf(pass.charAt(i)) != -1)
+                {
+                    acceptable2 = true;
+                }
+
+            }
+            // if the password has special characters
+            if(acceptable ==  false)
+            {
+                alert("password must contain special characters");
+                return false;
+            }
+            // if the password has numbers
+            if(acceptable2 ==  false)
+            {
+                alert("password must contain numbers");                
+                return false;
+            }
+
+            // check the length is 8 or greater
+
+            if( pass.length <= 7)
+            {
+                alert("password must be 8 characters or longer");
+                return false;
+            }
+    }
+    
+</script>
+
+{% endblock %}
+
+
+{% block main %}
+<div class='centreForm'>
+    <!-- create the form to allow users to enter their details-->
+    <form action="/register" method="post" name = register onsubmit=" return validateForm()">
+        <div class="mb-3">
+            <input autocomplete="off" autofocus class="form-control mx-auto w-auto" id="name" name="name" placeholder="Username" type="text" required >
+        </div>
+        <div class="mb-3 ">
+            <input class="form-control mx-auto w-auto " id="psswd" name="psswd" placeholder="Password" type="password" required>
+        </div>
+        <div class="mb-3 ">
+            <input class="form-control mx-auto w-auto " id="email" name="email" placeholder="email" type="email" required>
+        </div>
+        <button class="btn btn-primary " type="submit" style="margin-left: 47%">Register</button>
+    </form>
+    <p class = 'error'>{{ success }}</p>
+</div>
+{% endblock %}

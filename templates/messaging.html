@@ -1,0 +1,436 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Messaging
+{% endblock %}
+{% block head %}
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+{% endblock %}
+
+{% block main %} 
+
+<div class="container text-center">
+    <div class="row">
+        <div class="col -md-3 scrollable-div" style="width:300px; height: 400px; overflow-y: auto; overflow-x: hidden;">
+            <!-- this allows the user to access the manage friends page-->
+            <form action="/manageFriends" name = manageFriends >
+            <p style="font-weight: bold;">Chats <span class="inline-button"></span> <button class="btn btn-primary" style="margin-left: 47%" type="submit"> Manage Friends / Chats </button> </p>
+            </form>
+    
+            <!-- this table will display the users chats-->
+            <table class="table">
+                <tbody>
+                    <!-- First check if there are any chats-->
+                    {% if chat_list %}
+                    <!-- Output all the users chats-->
+                        {% for chat in chat_list %}
+                            <tr>
+                                <!-- turn the row into a button so users can click on it-->
+                                <td><button class="btn btn-primary chat-button">{{ chat }}</button></td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td>No chats available</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        <!-- This code will display the contnets of each chat -->
+        <div class="col-md-8 " >
+            <div id = 'refresh'>
+            <div class ='d-flex'><h1>{{openchat}}</h1>
+                <!-- If the user has clicked on a chat-->
+                {% if open == 'yes' %}
+                <!-- form that allows the user to delete the entrie conversation -->
+                    <button style ='margin-left: 170px;' class="btn btn-primary" type="submit" id = 'clearconversation'>Clear conversation</button>
+                {% endif %}
+            </div>
+            <div class="col-md-9 scrollable-div " id = 'allthechats' style="width: 800px; height: 400px;  overflow-y: auto; overflow-x: hidden;">
+                        <!-- First Check if there are any chats-->
+                        {% if message %}
+                        <!-- for all the messages in the chat-->
+                            {% for outer in message %}
+                            <!-- Check if it is a message that the user has sent or another member-->
+                                        {% if outer[2] == 1 %}
+                                        <!-- Output the users name -->
+                                        <p style="text-align: right;"> {{ outer[0] }}</p>
+                                        <div class="message-container2">
+                                        <!-- output the users message -->
+                                            <p> {{ outer[1] }}</p>
+                                            </div>
+                                            <button style="margin-left: 700px;" class="btn btn-primary delete-message" type="submit">Delete</button>
+
+                                        {% else  %}
+                                        <!-- output the users name -->
+                                            <p style="text-align: left;">{{ outer[0] }}</p>
+                                            <div class="message-container">
+                                        <!-- output the users message -->
+                                            <p> {{ outer[1] }}</p>
+                                            </div>
+                                        {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td>No previous messages</td>
+                            </tr>
+                        {% endif %}
+                </div>
+            </div>
+            <br>
+            <br>
+            <div class="col-md-15" style="height: 13vh;">
+                <!-- form that allows a user to send a message  -->
+                <br>
+                <br>
+                <div class="mb-3">
+                    <div class="d-flex" style="position: relative;">
+                        <div class="fixed" style="position: absolute; bottom: 0; width: 100%;">
+                            <div class="input-group">
+                                <!-- The textbox to allow the message to be sent-->
+                                <input autocomplete="off" autofocus class="form-control" id="send" name="send" placeholder="Send Message" type="text" required>
+                                <!-- the send button -->
+                                <button class="btn btn-primary" id = 'messagetosend'>Send</button>
+                            </div>
+                        </div>
+                    </div>
+                <div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+        let global_index = 0
+    document.addEventListener('DOMContentLoaded', function() {
+       // Add a click event listener to the document
+        document.addEventListener('click', function(event) {
+            // Check if the clicked element is a button with the class 'chat-button'
+            if (event.target.classList.contains('chat-button')) {
+                var index = -1;
+
+                // Iterate through the buttons to find the correct index
+                document.querySelectorAll('.chat-button').forEach(function(button, i) {
+                    if (button === event.target) {
+                        index = i;
+                    }
+                });
+
+                // Log or perform any action with the clicked button's index
+                console.log('Button clicked at index:', index);
+
+                global_index = index;
+
+                // Store the index in the array
+                getchat(index);
+
+               // Use setTimeout to add a delay
+                setTimeout(function() {
+                    socket.emit('leave', {}, function(leaveData) {
+                        // Wait for the leave function to complete
+                        console.log(leaveData);
+
+                        // After the leave function is complete, trigger the join function
+                        setTimeout(function() {
+                            socket.emit('join', {value: index}, function(data) {
+                                console.log(data);
+                            });
+                        }, 100);  // Wait 0.1 seconds
+                    });
+                }, 500);  // Wait 0.5 seconds 
+
+
+            }
+        });
+
+    function getchat(index) {
+        // Create a container element to hold the response HTML
+        const container = document.createElement('div');
+
+        // Make a POST request to the server with JSON data
+        fetch('openchats', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ chat: index })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.text();
+        })
+        .then(html => {
+            // Put the response HTML into the container
+            container.innerHTML = html;
+
+            // Extract the content you want to update
+            const newContent = container.querySelector('#refresh').innerHTML; // Replace 'your-target-element-id' with the actual ID of the element you want to update
+
+            // Update only the specific part of the page
+            document.getElementById('refresh').innerHTML = newContent;
+            
+            // scroll to the bottom of the chat
+            let Div = document.getElementById("allthechats");
+            Div.scrollTop = Div.scrollHeight;
+
+            // Update the URL in the address bar
+            const newUrl = '/openchats';  // Update with the correct URL
+            window.history.pushState({ path: newUrl }, '', newUrl);
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+
+    
+    
+        // Add a click event listener to the document
+        document.addEventListener('click', function(event) {
+            // Check if the clicked element is a button with the class 'chat-button'
+            if (event.target.classList.contains('delete-message')) {
+                var index = -1;
+    
+                // Iterate through the buttons to find the correct index
+                document.querySelectorAll('.delete-message').forEach(function(button, i) {
+                    if (button === event.target) {
+                        index = i;
+                    }
+                });
+
+                // Log or perform any action with the clicked button's index
+                console.log('Button clicked at index:', index);
+                // Store the index in the array
+                deletemessage(index);
+            }
+        });
+    
+    
+        // Function to delete the messages
+        function deletemessage(index) {
+            // Create a container element to hold the response HTML
+            const container = document.createElement('div');
+            fetch('deleteMessage', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 'mesg': index, 'index':global_index})  // Use the array in the payload
+            })
+            .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.text();
+        })
+            .then(html => {
+                // Put the response HTML into the container
+                container.innerHTML = html;
+
+                // Extract the content you want to update
+                const newContent = container.querySelector('#refresh').innerHTML; // Replace 'your-target-element-id' with the actual ID of the element you want to update
+
+                // Update only the specific part of the page
+                document.getElementById('refresh').innerHTML = newContent;
+                
+                // scroll to the bottom of the chat
+                let Div = document.getElementById("allthechats");
+                Div.scrollTop = Div.scrollHeight;
+
+                // Update the URL in the address bar
+                const newUrl = '/openchats';  // Update with the correct URL
+                window.history.pushState({ path: newUrl }, '', newUrl);
+            })
+            .catch(error => console.error('Error:', error));
+        }
+        
+                // Add a click event listener to the document
+        document.addEventListener('click', function(event) {
+            // Check if the clicked element has the id 'clearconversation'
+            if (event.target.id === 'clearconversation') {
+                // Log or perform any action when the 'clearconversation' button is clicked
+                console.log('Clear conversation button clicked');
+                // Call the function to handle the button click
+                clearconversation();
+            }
+        });
+
+    
+    
+        // Define submitchanges outside of the click event listener
+        function clearconversation() {
+            // Create a container element to hold the response HTML
+            const container = document.createElement('div');
+            fetch('clearconversation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({'index':global_index})  // Use the array in the payload
+            })
+            .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.text();
+        })
+            .then(html => {
+                // Put the response HTML into the container
+                container.innerHTML = html;
+
+                // Extract the content you want to update
+                const newContent = container.querySelector('#refresh').innerHTML; // Replace 'your-target-element-id' with the actual ID of the element you want to update
+
+                // Update only the specific part of the page
+                document.getElementById('refresh').innerHTML = newContent;
+                
+                // scroll to the bottom of the chat
+                let Div = document.getElementById("allthechats");
+                Div.scrollTop = Div.scrollHeight;
+
+                // Update the URL in the address bar
+                const newUrl = '/openchats';  // Update with the correct URL
+                window.history.pushState({ path: newUrl }, '', newUrl);
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        // Make sure socket.io is properly imported and initialized
+        const socket = io();
+        socket.on('connect', function() {
+            console.log('Connected to server');
+        });
+    
+// Check if the socket object is defined before adding the event listener
+        if (socket) {
+            const sendMessage = function () {
+                // Store the user's message
+                var message = document.getElementById('send').value;
+                console.log(message);
+
+                // Send the message back to the server 
+                socket.emit("new_message", {'message':message,'index':global_index});
+
+                // Set the textbox to empty 
+                document.getElementById('send').value = "";
+            };
+
+        // Add a click event listener to the 'messagetosend' button
+        document.getElementById('messagetosend').addEventListener("click", sendMessage);
+
+        // Add a keydown event listener to the 'send' input field
+        document.getElementById('send').addEventListener('keydown', function (event) {
+            // Check if the Enter key is pressed
+            if (event.key === 'Enter') {
+                // Prevent the default behavior (form submission) and trigger the sendMessage function
+                event.preventDefault();
+                // call the sendMessage function
+                sendMessage();
+                console.log('message has successfully been sent to the backend')
+            }
+        });
+        } else {
+        console.error("Socket.io is not properly initialized.");
+        }
+
+        socket.on('connect', function () {
+        console.log('Socket connected');
+        });
+
+        // Adds the chat 
+        socket.on("chat",function(message_details){
+            console.log('the message has been recieved')
+            // Make an AJAX request to fetch the id of the user 
+            fetch('/get_session_id')
+            .then(response => response.json())
+            .then(data => {
+            // store the users id
+            var sessionId = data.session_id;
+            // Now you can use the sessionId in your JavaScript code
+            console.log('Session ID:', sessionId);
+            // create a pointer to the div
+            let Div = document.getElementById("allthechats");
+            // create a p tag for the message
+            let messageP = document.createElement("p");
+            // create a p tag for the name 
+            let name = document.createElement("p")
+            // add the users name to name
+            name.textContent = message_details.username
+            console.log(message_details.ID)
+            // add the message to  messageP
+            messageP.textContent = message_details.message;
+            // if the users id is the same as the id associated with tthe message
+            if (message_details.ID == sessionId) {
+                // add the class for that message 
+                messageP.classList.add("message-container2");
+                // add the styles for the name 
+                name.style.textAlign = 'right'
+                // add the name and message to the Div
+                Div.appendChild(name);
+                Div.appendChild(messageP);
+                // create a delete button
+                let deleteB = document.createElement('button');
+                // Add classes one by one to the delete button
+                deleteB.classList.add("btn");
+                deleteB.classList.add("btn-primary");
+                deleteB.classList.add("delete-message");  
+                // set the delete button to submit          
+                deleteB.setAttribute('type', 'submit');
+                // Create a delete button
+                let buttonText = document.createTextNode('Delete')
+                //  Add the text to the button 
+                deleteB.appendChild(buttonText)
+                // style ther button
+                deleteB.style.marginLeft = '700px';
+                // add the button to the div
+                Div.appendChild(deleteB);
+            }
+            else{
+                // add the class to the message 
+                messageP.classList.add("message-container");
+                // Add the style to the name
+                name.style.textAlign = 'left'
+                // add the name to the div
+                Div.appendChild(name);
+                // add the message to div
+                Div.appendChild(messageP);
+            }
+            
+            Div.scrollTop = Div.scrollHeight;
+            console.log('successful');
+        })
+         .catch(error => console.error('Error:', error));
+        })
+
+        // Socket that recieves messages through the 'join' route
+        socket.on('joined_room', function(data) {
+            // Get the notifaction which was emitted
+            const message = data.joined;
+            // access the div of the chats
+            const Div56 = document.getElementById("allthechats");
+            
+            // Create a paragraph element
+            const notification = document.createElement("p");
+            // add the contnets of the emitted data to the notifcation tag 
+            notification.textContent = message;
+
+            // Append the paragraph element to the chat container
+            Div56.appendChild(notification);
+
+            // Log a message to the console
+            console.log('Message added to the DOM yes');
+
+        });
+
+        socket.on('test',function(data){
+            console.log('this works');
+        })
+
+
+})
+
+</script>
+    
+
+{% endblock %}

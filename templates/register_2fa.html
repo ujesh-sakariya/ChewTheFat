@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    2FA
+{% endblock %}
+  
+{% block main %}
+
+<!-- instructions to carry out the 2fa-->
+  <h1>Instructions!</h1>
+    <div class ='instructions'>
+      <ul>
+        <li>Download <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&hl=en&gl=US" target="_blank">Google Authenticator</a> on your mobile.</li>
+        <li>Create a new account with <strong>setup key</strong> method.</li>
+        <li>Provide the required details (name, secret key).</li>
+        <li>Scan the QR CODE</li>
+        <li>Submit the generated key in the form.</li>
+      </ul>
+    </div>
+<!-- image of the QR code-->
+    <img src ="data:image/jpeg;base64,{{ img_data }}" width ='400' height = '500' class = 'centerImage', alt="">
+<!-- allow use to enter the 2fa-->
+  <form action="/register_2fa" method="post" name = 2fa>
+    <div class="mb-3">
+      <input autocomplete="off" autofocus class="form-control mx-auto w-auto" id="OTP" name="OTP" placeholder="OTP" type="text" required >
+    </div>
+    <button class="btn btn-primary submitAuth " type="submit" >Authenticate</button>
+  </form>
+  <p style="margin-left: 38%" class = error >{{ status }}</p>
+
+{% endblock %}
+    
+     
+
+

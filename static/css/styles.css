@@ -1,0 +1,138 @@
+.center {
+
+    margin-left: auto;
+    margin-right: auto;
+    width: 20em;
+    font-weight: bold;
+  
+}
+
+.footer {
+  font-weight:bold; 
+  white-space: nowrap;
+  text-align: center;
+  display: inline-flex;
+  justify-content: center;
+  padding-left: 550px;
+  padding-top: 300px;
+
+}
+
+.centreForm {
+  padding-top: 100px;
+  justify-content: center;
+  align-items: center;
+}
+
+.submitAuth {
+  margin-left: 670px;
+}
+
+.instructions {
+  color: red;
+  font-weight:bold; 
+}
+
+
+.centerImage {
+
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%;
+  font-weight: bold;
+  display: block;
+
+}
+.navcol {
+    background-color:rgb(48, 48, 48);
+    color: white; 
+}
+
+.button {
+    border: none;
+    outline: 0;
+    display: inline-block;
+    padding: 8px;
+    color: white;
+    background-color: #000;
+    text-align: center;
+    cursor: pointer;
+    width: 150px;
+    margin-left: 535px;
+    font-size: 18px;
+  }
+
+  .error {
+    color: red;
+    font-weight: bold;
+    padding-left:50px;
+    
+  }
+
+  .inline-button {
+    display: inline-block;
+  }
+  /* This is the code to create the speech bubbles */
+
+  .message-container {
+      /* Width of the speech bubble */
+    max-width: 300px;
+      /* The Margin and padding moves the bubble so it is in the correcct position */
+    margin: 10px;
+    padding: 10px;
+      /* radius of the border */
+    border-radius: 10px;
+     /* Creates a white background */
+    background-color: #e1e1e1;
+    position: relative;
+}
+
+.message-container::before {
+    /* This CSS allows a small triangle to be added to the end */
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 100%;
+    border-style: solid;
+    border-width: 8px;
+    border-color: transparent #e1e1e1 transparent transparent;
+    transform: translateY(-50%);
+}
+
+.message-container2 {
+  max-width: 300px;
+  margin: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  left: 60%;
+  background-color: #4239eb;
+  position: relative;
+}
+
+.message-container2::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 100%; 
+  border-style: solid;
+  border-width: 8px;
+  
+  border-color: transparent transparent transparent #4239eb; 
+  transform: translateY(-50%);
+}
+
+.right {
+  margin-left:150px;
+}
+
+.fixed {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 10px;
+}
+
+.highlight {
+  background-color:khaki;
+}

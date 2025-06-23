@@ -1,0 +1,172 @@
+{% extends "layout.html" %}
+
+{% block title %} 
+    Manage Friends
+{% endblock %}
+
+{% block head %}
+<script>
+    // Array to store the indices of clicked buttons
+    var clickedIndices = [];
+    var clickedIndices2 = [];
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get all elements with the class 'chat-button'
+        var buttons = document.querySelectorAll('.chat-button');
+        var buttons2 = document.querySelectorAll('.chat-button2');
+        let confirm = document.getElementById('changes');
+
+
+        // Add a click event listener to each button
+        buttons.forEach(function(button, index) {
+            button.addEventListener('click', function() {
+                // Log or perform any action with the clicked button's index
+                console.log('Button clicked at index:', index);
+                button.classList.toggle('highlight');
+                // Check if the index is in the array
+                if (clickedIndices.includes(index)) {
+                    // If it is, remove it from the array
+                    const indexPosition = clickedIndices.indexOf(index); // Find the position
+                    clickedIndices.splice(indexPosition, 1); // Remove the element
+                } else {
+                    // If it is not, add it to the array
+                    clickedIndices.push(index);
+                }
+             });
+        });
+
+        // Add a click event listener to each button
+        buttons2.forEach(function(button, index) {
+            button.addEventListener('click', function() {
+                // Log or perform any action with the clicked button's index
+                console.log('Button clicked at index:', index);
+
+
+                // Store the index in the array
+                button.classList.toggle('highlight');
+                // Check if the index is in the array
+                if (clickedIndices2.includes(index)) {
+                    // If it is, remove it from the array
+                    const indexPosition = clickedIndices2.indexOf(index); // Find the position
+                    clickedIndices2.splice(indexPosition, 1); // Remove the element
+                } else {
+                    // If it is not, add it to the array
+                    clickedIndices2.push(index);
+                }
+            });
+        });
+
+        // Add a click event listener to the "Submit Changes" button
+        document.getElementById('submitChangesButton').addEventListener('click', function() {
+            // Call the submitchanges function when the button is clicked
+            submitchanges();
+            confirm.textContent = 'The changes you have made have been applied'
+
+
+        });
+    });
+
+    // Define submitchanges outside of the click event listener
+    function submitchanges() {
+        fetch('friendslist_changes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ button_indexes: clickedIndices, button_indexes2: clickedIndices2 })  // Use the array in the payload
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data.result);
+        })
+        .catch(error => console.error('Error:', error));
+    }
+</script>
+{% endblock %}
+
+
+{% block main %}
+
+<div class="container text-center">
+    <div class="row">
+        <div class="col">
+            <!-- Search bar so users can find people -->
+            <form action="findFriends"  name = "search" method = 'post'>
+                <div class="d-flex">
+                    <input autocomplete="off" autofocus class="form-control mx-auto w-auto" id="search" name="search" placeholder="Search" type="text" >
+                    <button class="btn btn-primary " type="submit">Search</button>
+                </div>                
+             </form>
+            <br>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Results</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- First Check if their are any chats-->
+                    {% if accounts %}
+                    <!-- Output al the users chats-->
+                        {% for acc in accounts %}
+                            <tr>
+                                <td>{{ acc }}</td>
+                                <!-- if the users is not currently friends-->
+                                {% if status[loop.index0] == 0 %}
+                                    <td><button class="btn btn-primary chat-button" style="margin-left: 47%" type="submit"> Add Friend </button> </td>
+                                <!-- if the users friend request is currently pending -->
+                                {% elif status[loop.index0] == 1 %}
+                                <!-- if the user is alread friends with the user -->
+                                    <td><button class="btn btn-primary chat-button" style="margin-left: 47%" type="submit"> Pending </button> </td>
+                                {% elif status[loop.index0] == 2 %}
+                                    <td><button class="btn btn-primary chat-button" style="margin-left: 47%" type="submit"> Add to chat </button> </td>
+                                {% endif %}
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td>No results found</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        <div class="col">
+            <div class="d-flex">
+                <form action="backtomessaging" name = 'return'>
+                    <button class="btn btn-primary ml-1" type="submit">back</button>
+                </form>
+            </div>   
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Friend Requests</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- First Check if their are any chats-->
+                    {% if freq %}
+                    <!-- Output al the users chats-->
+                        {% for FQ in freq %}
+                            <tr>
+                                <td>{{ FQ }}</td>
+                                <!-- accept user-->
+                                <td><button class="btn btn-primary chat-button2" style="margin-left: 47%" type="submit"> Accept </button> </td>
+                                <td><button class="btn btn-primary chat-button2" style="margin-left: 47%" type="submit"> Reject </button> </td>
+                                <!-- decline user-->                     
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td>No results found</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<button id="submitChangesButton" class="btn btn-primary" type="button" style="width: 150px; height: 40px; margin-left: 47%">Submit changes</button>
+<p id = 'changes' class = 'error' style = 'margin-left: 600px;'></p>
+
+{% endblock %}

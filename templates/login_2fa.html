@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    login2FA
+{% endblock %}
+
+{% block main %}
+
+<p class = 'instructions' style="margin-left: 25%"> Please go into your google authentication application and enter the TOTP registerd with this account.</p>
+<form action="/login_2fa" method="post" name = login_2fa>
+    <div class="mb-3">
+        <input autocomplete="off" autofocus class="form-control mx-auto w-auto" id="login_TOTP" name="login_TOTP" placeholder="TOTP" type="text" required >
+    </div>
+
+    <button class="btn btn-primary submitAuth" style="margin-left: 47%" type="submit"> Validate </button>
+</form>
+<p style="margin-left: 38%" class = error >{{ status }}</p>
+
+{% endblock %}
