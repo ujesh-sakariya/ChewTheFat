@@ -15,19 +15,6 @@ let key = [
   0x67, 0x20, 0x46, 0x75
 ];
 
-
-// key expansion function that will generate the round key 
-// The key expansion algorithm uses:
-// Rotate the last 4 bytes of the previous round key.
-// Substitute each byte with another byte using SBox.
-// XOR round constant with the first byte of the key.
-  // make use of Gf (2^8) therefore pattern is non repeating and unpredictable
-
-// constants used per round therefore round dependent variation ee
-const Rcon = [
-0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36
-];
-// randomly generated AES S-Box 
 const SBox = [
   0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
   0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
@@ -48,6 +35,7 @@ const SBox = [
 ];
 
 
+
 // function to rotate the last 4 bytes of the previous round key
 function rotateWord(word) {
     return [word[1], word[2], word[3], word[0]];
@@ -64,13 +52,6 @@ function xorWords(word1,word2) {
     return word1.map((val,i) => val ^ word2[i])
 }
 
-// GF(2^8) matrix 
-
-GF = [[2,3,1,1],
-      [1,2,3,1],
-      [1,1,2,3],
-      [3,1,1,2]]
-
 function xtwo(a) {
 
   // checks that when a left shit is carried out (x2) if the MSB is set to 1 before, complete a modular reduction 
@@ -85,6 +66,22 @@ function xthree(a) {
   
 }
 
+function xnine(a) {
+  return (xtwo(xtwo(xtwo(a))) ^ a)& 0xFF;
+}
+
+function xeleven(a) {
+  return (xtwo(xtwo(xtwo(a))) ^ xthree(a)) & 0xFF;
+}
+
+function xthirteen(a) {
+  return (xtwo(xtwo(xtwo(a))) ^ xtwo(xtwo(a)) ^ a) & 0xFF;
+}
+
+function xfourteen(a) {
+  return (xtwo(xtwo(xtwo(a)))  ^ xtwo(xtwo(a)) ^ xtwo(a)) & 0xFF;
+}
+
 function mixColumn(column) {
     return [
     xtwo(column[0]) ^ xthree(column[1]) ^ column[2] ^ column[3],
@@ -95,32 +92,7 @@ function mixColumn(column) {
 
 }
 
-// Creating the round keys 
-
-let expandedKeyArr = [];
-
-// for round 0, we use the original key as the round key
-
-expandedKeyArr[0] = key.slice(0,4);
-expandedKeyArr[1] = key.slice(4,8);
-expandedKeyArr[2] = key.slice(8,12);
-expandedKeyArr[3] = key.slice(12,16);
-
-// for round 1 - 10
-
-for(let i = 4; i < 44; i++) {
-
-  let temp = expandedKeyArr[i-1].slice()
-  // every 5th word ( start of the next block of 4 is made non linear ) 
-  if( i % 4 === 0) {
-
-    temp = rotateWord(temp);
-    temp = subWord(temp);
-    temp[0] = temp[0] ^ Rcon[(i / 4) -1];
-  }
-  expandedKeyArr[i] = expandedKeyArr[i - 4].map((val,j) => val ^ temp[j])
-
-}
+expandedKeyArr = gen_round_keys(key)
 
 
 // AES algo start 
@@ -209,5 +181,5 @@ for (let col = 0; col < 4; col++) {
 
 for( let i = 0; i < 4; i++) {
 console.log(plaintext[i].map(byte => byte.toString(16).padStart(2,'0')));
-
 }
+
