@@ -1,10 +1,3 @@
-function message(text) {
-  let m = 0n;
-  for (let char of text) {
-    m = m * 128n + BigInt(char.charCodeAt(0));
-  }
-  return m;
-}
 // Utility for big integers - use native BigInt (ES2020+)
 function binExp(base, exponent, mod) {
   if (mod === 0n) throw new Error("mod argument should not be 0");
@@ -21,10 +14,7 @@ function binExp(base, exponent, mod) {
   }
   return out;
 }
-// Example message
-  const plainMsg = "HELLO";
-  const m = message(plainMsg);
 
-  // Encrypt message
-  const ciphertext = binExp(m, e, n_val);
 
+// Decrypt message
+const decrypted = decrypt(binExp(ciphertext, d, n_val));

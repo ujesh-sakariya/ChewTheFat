@@ -157,25 +157,40 @@ def register_2fa():
             cursor.execute(query,(data))
             id = ((cursor.fetchone()[0]))
             session['ID'] = id
-            return render_template('messaging.html')
+            return jsonify({"status":"2fa_success"})
         else:
-            # Generate the QR code again so that the user can try again 
-            uri = pyotp.totp.TOTP(key).provisioning_uri(name = username, issuer_name='CTF')
-             # convert it into a qr code
-            QR = qrcode.make(uri)
-            #get in-memory info
-            data = io.BytesIO()
-            # save image as in-memory
-            QR.save(data, "JPEG")
-            #encode saved image in the file
-            encoded_img_data = base64.b64encode(data.getvalue())
-            
-
-
-            return render_template('register_2fa.html', img_data=encoded_img_data.decode('utf-8'), status='Wrong OTP entered, Please try again')
-
+            return jsonify({"status":"2fa_failed"})
     else:
         return render_template('homepage.html')
+    
+
+@app.route('/store_encrypted_key', methods=['POST'])
+def store_encrypted_key():
+    try:
+        data = request.get_json()
+
+        encrypted_private_key = data.get('encryptedPrivateKey')
+        public_key = data.get('publicKey')
+        n_value = data.get('nValue')
+
+        # Basic validation
+        if not encrypted_private_key or not public_key or not n_value:
+            return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
+
+        # TODO: Store the encrypted_private_key, public_key, and n_value securely
+        # For example, save to a database or session. Here just print or mock:
+        print("Received Encrypted Private Key (2D array):", encrypted_private_key)
+        print("Public Key:", public_key)
+        print("nValue:", n_value)
+
+        # Simulate successful storage
+        return jsonify({'status': 'success'})
+
+    except Exception as e:
+
+        print('error')
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
         
 # route to handle 2FA when logging in
 @app.route("/login_2fa",  methods=["GET","POST"])
