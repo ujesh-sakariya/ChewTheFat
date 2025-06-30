@@ -152,7 +152,7 @@ with open('convos.pkl', 'rb+') as file:
             chats = pickle.load(file)
             print(chats)
 
-with open('chats.pkl', 'rb+') as file: 
+'''with open('chats.pkl', 'rb+') as file: 
         # Call load method to deserialze 
             chats = pickle.load(file)
             print(chats)
@@ -163,7 +163,7 @@ with open('friendsList.pkl', 'rb+') as file:
             print(chats)
 
 
-
+'''
 
 if False:
     with open('convos.pkl', 'rb+') as fh:

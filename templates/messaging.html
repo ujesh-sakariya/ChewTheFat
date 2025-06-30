@@ -48,6 +48,8 @@
                 {% endif %}
             </div>
             <div class="col-md-9 scrollable-div " id = 'allthechats' style="width: 800px; height: 400px;  overflow-y: auto; overflow-x: hidden;">
+                 <p>{{ public_key }}</p>
+                        <p>{{ private_key }}</p>
                         <!-- First Check if there are any chats-->
                         {% if message %}
                         <!-- for all the messages in the chat-->
@@ -166,8 +168,8 @@
             // Put the response HTML into the container
             container.innerHTML = html;
 
-            // Extract the content you want to update
-            const newContent = container.querySelector('#refresh').innerHTML; // Replace 'your-target-element-id' with the actual ID of the element you want to update
+            // Extract the content to be updated
+            const newContent = container.querySelector('#refresh').innerHTML; 
 
             // Update only the specific part of the page
             document.getElementById('refresh').innerHTML = newContent;
@@ -309,6 +311,15 @@
                 var message = document.getElementById('send').value;
                 console.log(message);
 
+                // encrypt the message
+                const isPrivateChat = "{{ 'true' if is_private_chat else 'false' }}";
+                console.log(isPrivateChat);
+                if (isPrivateChat === "true") {
+                const public_key = `{{ public_key | safe }} `;
+                const n_val = `{{ sender_n | safe }}`;
+                message = RSA_encrypt(message,public_key,n_val)
+                console.log(message)
+                }
                 // Send the message back to the server 
                 socket.emit("new_message", {'message':message,'index':global_index});
 
@@ -334,74 +345,135 @@
         console.error("Socket.io is not properly initialized.");
         }
 
-        socket.on('connect', function () {
-        console.log('Socket connected');
-        });
 
-        // Adds the chat 
-        socket.on("chat",function(message_details){
-            console.log('the message has been recieved')
-            // Make an AJAX request to fetch the id of the user 
+        // Helper to convert Base64 back to ArrayBuffer (array of binary)
+        function base64ToArrayBuffer(base64) {
+        const binaryString = atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes.buffer;
+        }
+
+
+        function decryptAndReconstructRSAKey(encryptedChunks, aesKeyRaw) {
+
+            function toMatrix(arr) {
+                // Reconstruct 4x4 matrix column-wise
+                return [
+                    [arr[0], arr[4], arr[8],  arr[12]],
+                    [arr[1], arr[5], arr[9],  arr[13]],
+                    [arr[2], arr[6], arr[10], arr[14]],
+                    [arr[3], arr[7], arr[11], arr[15]]
+                ];
+            }
+
+            const decryptedBytes = [];
+
+            encryptedChunks.forEach(base64Chunk => {
+                const binaryString = atob(base64Chunk);
+                const bytes = [];
+
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes.push(binaryString.charCodeAt(i));
+                }
+
+                const matrix = toMatrix(bytes);
+                const decryptedMatrix = AES_decrypt(matrix, aesKeyRaw);  // Assuming you have AES_decrypt()
+
+                // Flatten decrypted matrix column-wise
+                const flat = [
+                    decryptedMatrix[0][0], decryptedMatrix[1][0], decryptedMatrix[2][0], decryptedMatrix[3][0],
+                    decryptedMatrix[0][1], decryptedMatrix[1][1], decryptedMatrix[2][1], decryptedMatrix[3][1],
+                    decryptedMatrix[0][2], decryptedMatrix[1][2], decryptedMatrix[2][2], decryptedMatrix[3][2],
+                    decryptedMatrix[0][3], decryptedMatrix[1][3], decryptedMatrix[2][3], decryptedMatrix[3][3],
+                ];
+
+                decryptedBytes.push(...flat);
+            });
+
+            // Convert bytes back to string
+            const decoder = new TextDecoder();
+            // Remove potential trailing null bytes (0x00) from padding
+            const cleanBytes = trimTrailingZeros(decryptedBytes);
+            return decoder.decode(new Uint8Array(cleanBytes));
+        }
+
+        function trimTrailingZeros(arr) {
+        let lastNonZeroIndex = arr.length - 1;
+        while (lastNonZeroIndex >= 0 && arr[lastNonZeroIndex] === 0) {
+            lastNonZeroIndex--;
+        }
+        return arr.slice(0, lastNonZeroIndex + 1);
+        }
+
+
+        socket.on("chat", function(message_details) {
+            console.log('Message received');
+
             fetch('/get_session_id')
             .then(response => response.json())
             .then(data => {
-            // store the users id
-            var sessionId = data.session_id;
-            // Now you can use the sessionId in your JavaScript code
-            console.log('Session ID:', sessionId);
-            // create a pointer to the div
-            let Div = document.getElementById("allthechats");
-            // create a p tag for the message
-            let messageP = document.createElement("p");
-            // create a p tag for the name 
-            let name = document.createElement("p")
-            // add the users name to name
-            name.textContent = message_details.username
-            console.log(message_details.ID)
-            // add the message to  messageP
-            messageP.textContent = message_details.message;
-            // if the users id is the same as the id associated with tthe message
-            if (message_details.ID == sessionId) {
-                // add the class for that message 
-                messageP.classList.add("message-container2");
-                // add the styles for the name 
-                name.style.textAlign = 'right'
-                // add the name and message to the Div
-                Div.appendChild(name);
-                Div.appendChild(messageP);
-                // create a delete button
-                let deleteB = document.createElement('button');
-                // Add classes one by one to the delete button
-                deleteB.classList.add("btn");
-                deleteB.classList.add("btn-primary");
-                deleteB.classList.add("delete-message");  
-                // set the delete button to submit          
-                deleteB.setAttribute('type', 'submit');
-                // Create a delete button
-                let buttonText = document.createTextNode('Delete')
-                //  Add the text to the button 
-                deleteB.appendChild(buttonText)
-                // style ther button
-                deleteB.style.marginLeft = '700px';
-                // add the button to the div
-                Div.appendChild(deleteB);
-            }
-            else{
-                // add the class to the message 
-                messageP.classList.add("message-container");
-                // Add the style to the name
-                name.style.textAlign = 'left'
-                // add the name to the div
-                Div.appendChild(name);
-                // add the message to div
-                Div.appendChild(messageP);
-            }
-            
-            Div.scrollTop = Div.scrollHeight;
-            console.log('successful');
-        })
-         .catch(error => console.error('Error:', error));
-        })
+                const sessionId = data.session_id;
+                console.log('Session ID:', sessionId);
+
+                const Div = document.getElementById("allthechats");
+                const messageP = document.createElement("p");
+                const name = document.createElement("p");
+
+                name.textContent = message_details.username;
+                console.log(message_details.ID);
+
+                // Get encrypted private key chunks
+                const privateKeyChunks = JSON.parse(`{{ private_key | tojson | safe }}`);
+                const n_val = `{{ reciever_n | safe }}`;
+                const isPrivateChat = "{{ 'true' if is_private_chat else 'false' }}";
+                if (isPrivateChat === "true") {
+                // Get AES key from storage
+                const aesKeyBase64 = sessionStorage.getItem('AES_KEY');
+                if (!aesKeyBase64) {
+                console.error('AES_KEY not found in sessionStorage');
+                return;
+                }
+                const aesKeyRaw = new Uint8Array(base64ToArrayBuffer(aesKeyBase64));
+                const recoveredPrivateKey = decryptAndReconstructRSAKey(privateKeyChunks, aesKeyRaw);
+                console.log(recoveredPrivateKey);
+
+                // Decrypt the message using RSA
+                const msg = RSA_decrypt(message_details.message, recoveredPrivateKey, n_val);
+                messageP.textContent = msg;
+                }
+                else {
+                    messageP.textContent = message_details.message;
+                }
+
+                if (message_details.ID == sessionId) {
+                    messageP.classList.add("message-container2");
+                    name.style.textAlign = 'right';
+                    Div.appendChild(name);
+                    Div.appendChild(messageP);
+
+                    const deleteB = document.createElement('button');
+                    deleteB.classList.add("btn", "btn-primary", "delete-message");
+                    deleteB.setAttribute('type', 'submit');
+                    deleteB.textContent = 'Delete';
+                    deleteB.style.marginLeft = '700px';
+                    Div.appendChild(deleteB);
+                } else {
+                    messageP.classList.add("message-container");
+                    name.style.textAlign = 'left';
+                    Div.appendChild(name);
+                    Div.appendChild(messageP);
+                }
+
+                Div.scrollTop = Div.scrollHeight;
+                console.log('Successful');
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
 
         // Socket that recieves messages through the 'join' route
         socket.on('joined_room', function(data) {

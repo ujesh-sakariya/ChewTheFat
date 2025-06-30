@@ -34,6 +34,8 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 from flask_socketio import SocketIO, emit, join_room, leave_room
 socketio = SocketIO(app) 
 
+import json
+
 
 # default route - takes the user to the homepage to choose too log in or register an account 
 @app.route("/")
@@ -120,7 +122,7 @@ def register():
         
          # add a user to the friends list adjacency matrix
         data = [username]
-        uery = ('SELECT id from accounts WHERE username = %s')
+        query = ('SELECT id from accounts WHERE username = %s')
         cursor.execute(query,(data))
         id = (cursor.fetchone()[0])
         session['ID'] = id
@@ -177,14 +179,20 @@ def store_encrypted_key():
         if not encrypted_private_key or not public_key or not n_value:
             return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
 
-        # TODO: Store the encrypted_private_key, public_key, and n_value securely
-        # For example, save to a database or session. Here just print or mock:
-        print("Received Encrypted Private Key (2D array):", encrypted_private_key)
-        print("Public Key:", public_key)
-        print("nValue:", n_value)
+        encrypted_private_key_json = json.dumps(encrypted_private_key)
+        public_key_str = str(public_key)
+        n_value_str = str(n_value)
 
-        # Simulate successful storage
-        return jsonify({'status': 'success'})
+        print("Store Encrypted Key route hit!")
+
+        id = session['ID']
+        query = ("UPDATE accounts SET privateKey = %s, publicKey = %s,nVal = %s WHERE id = %s")
+        data = (encrypted_private_key_json,public_key_str,n_value_str,id)
+        cursor.execute(query,data)
+        db.commit()
+
+        return jsonify({"status":"success"})
+
 
     except Exception as e:
 
@@ -274,7 +282,8 @@ def mainMessage():
         x = session['prev_openchat']
         print(f'joined room {x}')
         
-        return render_template('messaging.html',chat_list=chat_list,open = 'no')
+        return render_template('messaging.html',chat_list=chat_list,open = 'no',private_key='',
+        reciever_n='',public_key='',sender_n= '',is_private_chat = False)
 
 # route to load messaging screen 
 @app.route("/manageFriends",  methods=["GET"])
@@ -509,13 +518,40 @@ def openchats():
         # Fetch all the results
         names = cursor.fetchall()
 
-    # create a dictionary where the key is the id and the definition is the users name 
+    # create a dictionary where the key is the id and the item is the users name 
     accounts_dict = {}
     for i in range(len(participants)):
         accounts_dict[participants[i]] = names[i][0]
-    
+
     # find the current users id
     id = session['ID']
+
+    # GET ENCRYPTION KEY ONLY FOR 1-1 MESSAGING
+    
+    if len(accounts_dict) == 2:
+
+        #Get the recipient's ID (the one that's NOT the current user)
+        recipient_id = [key for key in accounts_dict.keys() if key != id][0]
+        query = ('SELECT publicKey,nVal FROM accounts WHERE id = %s')
+        cursor.execute(query,(recipient_id,))
+        data = cursor.fetchone()
+        public_key,sender_n = data[0],data[1]
+
+        # get the encrypted private key of the sender and the n_val
+        query = ('SELECT PrivateKey, nVal FROM accounts WHERE id = %s')
+        cursor.execute(query,(id,))
+        data = cursor.fetchone()
+        private_key ,reciever_n= data[0],data[1]
+        is_private_chat = True
+    # for gc's
+    else:
+        private_key = 'null'
+        public_key = 'null'
+        sender_n = 'null'
+        reciever_n = 'null'
+        is_private_chat = False
+        
+    
 
     # add the messages to an array with the users name and depending if it is the current user, store the value 0 or 1
     # This is so we can different style depending on if the user sent a message or not
@@ -530,7 +566,7 @@ def openchats():
                 message.append([accounts_dict[chats[i][0]],chats[i][1],0])
         print(message)
 
-    return render_template('messaging.html', chat_list = chat_list, openchat = current, message = message, open = 'yes' )
+    return render_template('messaging.html', chat_list = chat_list, openchat = current, message = message, open = 'yes', private_key = private_key, public_key = public_key,sender_n = sender_n, reciever_n = reciever_n,is_private_chat = is_private_chat )
 
 # handle user joining a room
 

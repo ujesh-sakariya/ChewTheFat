@@ -21,10 +21,9 @@ function binExp(base, exponent, mod) {
   }
   return out;
 }
-// Example message
-  const plainMsg = "HELLO";
-  const m = message(plainMsg);
 
+function RSA_encrypt(m,e,n_val) {
   // Encrypt message
-  const ciphertext = binExp(m, e, n_val);
+  return  binExp(m, e, n_val);
 
+}

@@ -150,6 +150,7 @@
 
         if(sendKeyData.status === 'success') {
           statusMsg.textContent = 'Keys stored securely! Registration complete.';
+          window.location.href = '/mainMessage';
         } else {
           statusMsg.textContent = 'Error storing keys on server.';
         }

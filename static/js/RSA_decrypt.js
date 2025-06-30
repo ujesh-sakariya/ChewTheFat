@@ -17,4 +17,6 @@ function binExp(base, exponent, mod) {
 
 
 // Decrypt message
-const decrypted = decrypt(binExp(ciphertext, d, n_val));
+function RSA_decrypt(ciphertext,key,n_val){
+  return binExp(ciphertext, key, n_val);
+}
