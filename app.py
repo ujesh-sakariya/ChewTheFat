@@ -550,6 +550,8 @@ def openchats():
         sender_n = 'null'
         reciever_n = 'null'
         is_private_chat = False
+    
+    print("private: " ,is_private_chat)
         
     
 
@@ -566,8 +568,10 @@ def openchats():
                 message.append([accounts_dict[chats[i][0]],chats[i][1],0])
         print(message)
 
-    return render_template('messaging.html', chat_list = chat_list, openchat = current, message = message, open = 'yes', private_key = private_key, public_key = public_key,sender_n = sender_n, reciever_n = reciever_n,is_private_chat = is_private_chat )
-
+    return jsonify({
+    'chat_list': chat_list,'openchat': current,'message': message,'open': 'yes','private_key': private_key,'public_key': public_key,'sender_n': sender_n,
+    'reciever_n': reciever_n,'is_private_chat': is_private_chat
+    })
 # handle user joining a room
 
 @socketio.on('join')
@@ -619,21 +623,23 @@ def handle_new_message(message):
     index = message.get('index')
     print(f' the index clicked was {index}')
     # get the id of the chat
+    mode = message.get('selectedMode')
     chat_id_list = session['chat_id_list']
     chat_id = chat_id_list[index]
     print(f"New message: {message}")
     username = session['name']
     id = session['ID']
     print(f'the current id is{id}')   
-    # add the message to the database 
-    print(f'messages are being added to {chat_id}')
-    query = ("INSERT INTO messages (chatID,id,message) VALUES (%s,%s,%s)")
-    data = (chat_id,id,text)
-    cursor.execute(query,data)
-    db.commit()
+    # add the message to the database if mode is standard
+    if mode == 'standard':
+        print(f'messages are being added to {chat_id}')
+        query = ("INSERT INTO messages (chatID,id,message) VALUES (%s,%s,%s)")
+        data = (chat_id,id,text)
+        cursor.execute(query,data)
+        db.commit()
     room = chat_id
     # This will take in the message and broadcast to all the clients 
-    emit("chat",{"message":text, "ID":id,"username":username}, room=room)
+    emit("chat",{"message":text, "ID":id,"username":username}, room=room,include_self=False)
     print('successful')
 
 @app.route('/get_session_id', methods=['GET'])

@@ -8,7 +8,9 @@
 {% endblock %}
 
 {% block main %} 
-
+<script src="{{ url_for('static', filename='js/RSA_encrypt.js') }}"></script>
+<script src="{{ url_for('static', filename='js/RSA_decrypt.js') }}"></script>
+<script src="{{ url_for('static', filename='js/AES_decrypt.js') }}"></script>
 <div class="container text-center">
     <div class="row">
         <div class="col -md-3 scrollable-div" style="width:300px; height: 400px; overflow-y: auto; overflow-x: hidden;">
@@ -39,47 +41,25 @@
         </div>
         <!-- This code will display the contnets of each chat -->
         <div class="col-md-8 " >
-            <div id = 'refresh'>
-            <div class ='d-flex'><h1>{{openchat}}</h1>
-                <!-- If the user has clicked on a chat-->
-                {% if open == 'yes' %}
-                <!-- form that allows the user to delete the entrie conversation -->
-                    <button style ='margin-left: 170px;' class="btn btn-primary" type="submit" id = 'clearconversation'>Clear conversation</button>
-                {% endif %}
-            </div>
-            <div class="col-md-9 scrollable-div " id = 'allthechats' style="width: 800px; height: 400px;  overflow-y: auto; overflow-x: hidden;">
-                 <p>{{ public_key }}</p>
-                        <p>{{ private_key }}</p>
-                        <!-- First Check if there are any chats-->
-                        {% if message %}
-                        <!-- for all the messages in the chat-->
-                            {% for outer in message %}
-                            <!-- Check if it is a message that the user has sent or another member-->
-                                        {% if outer[2] == 1 %}
-                                        <!-- Output the users name -->
-                                        <p style="text-align: right;"> {{ outer[0] }}</p>
-                                        <div class="message-container2">
-                                        <!-- output the users message -->
-                                            <p> {{ outer[1] }}</p>
-                                            </div>
-                                            <button style="margin-left: 700px;" class="btn btn-primary delete-message" type="submit">Delete</button>
-
-                                        {% else  %}
-                                        <!-- output the users name -->
-                                            <p style="text-align: left;">{{ outer[0] }}</p>
-                                            <div class="message-container">
-                                        <!-- output the users message -->
-                                            <p> {{ outer[1] }}</p>
-                                            </div>
-                                        {% endif %}
-                            {% endfor %}
-                        {% else %}
-                            <tr>
-                                <td>No previous messages</td>
-                            </tr>
-                        {% endif %}
+            <div id='refresh'>
+                <div class='d-flex'>
+                    <h1 id="chat-title"></h1>
+                    <!-- Allow the user to choose the mode-->
+                    <div style="margin-bottom: 10px;">
+                    <label for="mode-select">Chat Mode:</label>
+                    <select id="mode-select" name="mode-select">
+                        <option value="standard">Standard (Stored, Unencrypted)</option>
+                        <option value="private">Private (E2EE, Ephemeral)</option>
+                    </select>
+                    <small id="mode-warning" style="color: red; display: none;">Private mode disabled for group chats</small>
+                    </div>
+                    <button style='margin-left: 170px;' class="btn btn-primary" type="button" id='clearconversation'>Clear conversation</button>
+                </div>
+                <div class="col-md-9 scrollable-div" id='allthechats' style="width: 800px; height: 400px; overflow-y: auto; overflow-x: hidden;">
+            <!-- Messages will be injected here via JS -->
                 </div>
             </div>
+
             <br>
             <br>
             <div class="col-md-15" style="height: 13vh;">
@@ -104,7 +84,7 @@
 </div>
 
 <script>
-        let global_index = 0
+    let global_index = 0
     document.addEventListener('DOMContentLoaded', function() {
        // Add a click event listener to the document
         document.addEventListener('click', function(event) {
@@ -147,46 +127,103 @@
         });
 
     function getchat(index) {
-        // Create a container element to hold the response HTML
-        const container = document.createElement('div');
+    fetch('/openchats', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ chat: index })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log(data);
+        currentChatData = data;  // Store the JSON in the global variable
 
-        // Make a POST request to the server with JSON data
-        fetch('openchats', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ chat: index })
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
+
+        // Update chat title
+        document.getElementById("chat-title").textContent = data.openchat;
+
+        // Show/hide clear conversation button
+        const clearBtn = document.getElementById('clearconversation');
+        clearBtn.style.display = data.open === 'yes' ? 'inline-block' : 'none';
+
+        // Inject messages
+        const chatContainer = document.getElementById("allthechats");
+        chatContainer.innerHTML = "";  // Clear old messages
+
+        if (data.message && data.message.length > 0) {
+            data.message.forEach(msg => {
+                const name = msg[0];
+                const messageText = msg[1];
+                const isCurrentUser = msg[2] === 1;
+
+                const nameP = document.createElement("p");
+                nameP.textContent = name;
+                nameP.style.textAlign = isCurrentUser ? "right" : "left";
+
+                const messageDiv = document.createElement("div");
+                messageDiv.className = isCurrentUser ? "message-container2" : "message-container";
+                messageDiv.innerHTML = `<p>${messageText}</p>`;
+
+                chatContainer.appendChild(nameP);
+                chatContainer.appendChild(messageDiv);
+
+                if (isCurrentUser) {
+                    const deleteBtn = document.createElement("button");
+                    deleteBtn.className = "btn btn-primary delete-message";
+                    deleteBtn.textContent = "Delete";
+                    deleteBtn.style.marginLeft = "700px";
+                    deleteBtn.type = "button";
+                    chatContainer.appendChild(deleteBtn);
+                }
+            });
+        } else {
+            chatContainer.innerHTML = "<p>No previous messages</p>";
             }
-            return response.text();
-        })
-        .then(html => {
-            // Put the response HTML into the container
-            container.innerHTML = html;
 
-            // Extract the content to be updated
-            const newContent = container.querySelector('#refresh').innerHTML; 
+        // Scroll to bottom
+        chatContainer.scrollTop = chatContainer.scrollHeight;
 
-            // Update only the specific part of the page
-            document.getElementById('refresh').innerHTML = newContent;
-            
-            // scroll to the bottom of the chat
-            let Div = document.getElementById("allthechats");
-            Div.scrollTop = Div.scrollHeight;
+        const modeSelect = document.getElementById('mode-select');
+        const modeWarning = document.getElementById('mode-warning');
 
-            // Update the URL in the address bar
-            const newUrl = '/openchats';  // Update with the correct URL
-            window.history.pushState({ path: newUrl }, '', newUrl);
-        })
-        .catch(error => console.error('Error:', error));
-}
+        // Default to "standard" mode in sessionStorage and dropdown
+        modeSelect.value = 'standard';
+        sessionStorage.setItem('chat_mode_' + index, 'standard');
+
+        console.log(" chat mode is" + data.is_private_chat)
+        // Handle encryption logic
+        if (!data.is_private_chat) {
+            modeSelect.disabled = true;
+            modeWarning.style.display = 'inline';
+            sessionStorage.setItem('PRIVATE_KEY_CHUNKS', JSON.stringify(data.private_key_chunks));
+            sessionStorage.setItem('RECIEVER_N', data.reciever_n);
+
+        } else {
+            modeSelect.disabled = false;
+            modeWarning.style.display = 'none';
+
+            console.log("Private chat detected");
+            console.log("Public Key:", data.public_key);
+            console.log("Private Key:", data.private_key);
+        }
+    })
+    .catch(error => console.error('Error:', error));
+    }
 
 
-    
+
+    // handle user selecting a mode
+    document.getElementById('mode-select').addEventListener('change', function() {
+    const selectedMode = this.value;
+    console.log('Mode changed to:', selectedMode);
+    sessionStorage.setItem('chat_mode_' + global_index, selectedMode);
+    });
     
         // Add a click event listener to the document
         document.addEventListener('click', function(event) {
@@ -304,46 +341,82 @@
             console.log('Connected to server');
         });
     
-// Check if the socket object is defined before adding the event listener
-        if (socket) {
-            const sendMessage = function () {
-                // Store the user's message
-                var message = document.getElementById('send').value;
-                console.log(message);
+    
+    function sendMessage() {
+    const messageInput = document.getElementById('send');
+    const message = messageInput.value.trim();
 
-                // encrypt the message
-                const isPrivateChat = "{{ 'true' if is_private_chat else 'false' }}";
-                console.log(isPrivateChat);
-                if (isPrivateChat === "true") {
-                const public_key = `{{ public_key | safe }} `;
-                const n_val = `{{ sender_n | safe }}`;
-                message = RSA_encrypt(message,public_key,n_val)
-                console.log(message)
-                }
-                // Send the message back to the server 
-                socket.emit("new_message", {'message':message,'index':global_index});
+    if (message === '') {
+        return; // Don't send empty messages
+    }
 
-                // Set the textbox to empty 
-                document.getElementById('send').value = "";
-            };
+    if (!currentChatData) {
+        console.error("No chat selected.");
+        return;
+    }
 
-        // Add a click event listener to the 'messagetosend' button
-        document.getElementById('messagetosend').addEventListener("click", sendMessage);
+    const selectedMode = sessionStorage.getItem('chat_mode_' + global_index);
 
-        // Add a keydown event listener to the 'send' input field
-        document.getElementById('send').addEventListener('keydown', function (event) {
-            // Check if the Enter key is pressed
-            if (event.key === 'Enter') {
-                // Prevent the default behavior (form submission) and trigger the sendMessage function
-                event.preventDefault();
-                // call the sendMessage function
-                sendMessage();
-                console.log('message has successfully been sent to the backend')
-            }
+    if (selectedMode === "private") {
+        console.log("Private chat - encrypting message");
+
+        const publicKey = BigInt(currentChatData.public_key);
+        const nVal = BigInt(currentChatData.sender_n);
+
+        console.log(message);
+        const encryptedMessage = RSA_encrypt(message, publicKey, nVal);
+        console.log(encryptedMessage,publicKey,nVal);
+        // Send via Socket.IO emit
+        socket.emit('new_message', {
+            message: encryptedMessage.toString(),
+            index: global_index,  
+            selectedMode: 'private'
         });
-        } else {
-        console.error("Socket.io is not properly initialized.");
-        }
+
+    } else {
+        console.log("Standard chat - sending message");
+
+        socket.emit('new_message', {
+            message: message,
+            index: global_index,
+            selectedMode: 'standard'
+        });
+    }
+
+    messageInput.value = ''; // Clear input
+    displayOwnMessage(message);
+
+}
+
+    
+    const sendButton = document.getElementById('messagetosend');
+    sendButton.addEventListener('click',sendMessage)
+    
+    function displayOwnMessage(plainTextMessage) {
+    const Div = document.getElementById("allthechats");
+
+    const messageP = document.createElement("p");
+    const name = document.createElement("p");
+
+    name.textContent = sessionStorage.getItem('name') || "You";
+
+    messageP.textContent = plainTextMessage;
+
+    messageP.classList.add("message-container2");
+    name.style.textAlign = 'right';
+    Div.appendChild(name);
+    Div.appendChild(messageP);
+
+    const deleteB = document.createElement('button');
+    deleteB.classList.add("btn", "btn-primary", "delete-message");
+    deleteB.setAttribute('type', 'submit');
+    deleteB.textContent = 'Delete';
+    deleteB.style.marginLeft = '700px';
+    Div.appendChild(deleteB);
+
+    Div.scrollTop = Div.scrollHeight;
+
+    }
 
 
         // Helper to convert Base64 back to ArrayBuffer (array of binary)
@@ -410,69 +483,65 @@
         }
 
 
-        socket.on("chat", function(message_details) {
-            console.log('Message received');
+    // Listen for incoming messages from server
+socket.on("chat", function(message_details) {
+    console.log('Message received', message_details);
 
-            fetch('/get_session_id')
-            .then(response => response.json())
-            .then(data => {
-                const sessionId = data.session_id;
-                console.log('Session ID:', sessionId);
+    fetch('/get_session_id')
+    .then(response => response.json())
+    .then(data => {
+        const sessionId = data.session_id;
+        const Div = document.getElementById("allthechats");
 
-                const Div = document.getElementById("allthechats");
-                const messageP = document.createElement("p");
-                const name = document.createElement("p");
+        const messageP = document.createElement("p");
+        const name = document.createElement("p");
+        name.textContent = message_details.username;
 
-                name.textContent = message_details.username;
-                console.log(message_details.ID);
+        const isPrivateChat = message_details.is_private_chat;
 
-                // Get encrypted private key chunks
-                const privateKeyChunks = JSON.parse(`{{ private_key | tojson | safe }}`);
-                const n_val = `{{ reciever_n | safe }}`;
-                const isPrivateChat = "{{ 'true' if is_private_chat else 'false' }}";
-                if (isPrivateChat === "true") {
-                // Get AES key from storage
-                const aesKeyBase64 = sessionStorage.getItem('AES_KEY');
-                if (!aesKeyBase64) {
-                console.error('AES_KEY not found in sessionStorage');
-                return;
-                }
-                const aesKeyRaw = new Uint8Array(base64ToArrayBuffer(aesKeyBase64));
-                const recoveredPrivateKey = decryptAndReconstructRSAKey(privateKeyChunks, aesKeyRaw);
-                console.log(recoveredPrivateKey);
+        if (isPrivateChat) {
+            const aesKeyBase64 = sessionStorage.getItem('AES_KEY');
+            if (!aesKeyBase64) return console.error('AES_KEY not found');
 
-                // Decrypt the message using RSA
-                const msg = RSA_decrypt(message_details.message, recoveredPrivateKey, n_val);
-                messageP.textContent = msg;
-                }
-                else {
-                    messageP.textContent = message_details.message;
-                }
+            const aesKeyRaw = new Uint8Array(base64ToArrayBuffer(aesKeyBase64));
+            const privateKeyChunks = JSON.parse(sessionStorage.getItem('PRIVATE_KEY_CHUNKS'));
+            const n_val = sessionStorage.getItem('RECIEVER_N');
 
-                if (message_details.ID == sessionId) {
-                    messageP.classList.add("message-container2");
-                    name.style.textAlign = 'right';
-                    Div.appendChild(name);
-                    Div.appendChild(messageP);
+            if (!privateKeyChunks || !n_val) return console.error('Missing private key data');
 
-                    const deleteB = document.createElement('button');
-                    deleteB.classList.add("btn", "btn-primary", "delete-message");
-                    deleteB.setAttribute('type', 'submit');
-                    deleteB.textContent = 'Delete';
-                    deleteB.style.marginLeft = '700px';
-                    Div.appendChild(deleteB);
-                } else {
-                    messageP.classList.add("message-container");
-                    name.style.textAlign = 'left';
-                    Div.appendChild(name);
-                    Div.appendChild(messageP);
-                }
+            const recoveredPrivateKey = decryptAndReconstructRSAKey(privateKeyChunks, aesKeyRaw);
+            messageP.textContent = RSA_decrypt(message_details.message, recoveredPrivateKey, n_val);
 
-                Div.scrollTop = Div.scrollHeight;
-                console.log('Successful');
-            })
-            .catch(error => console.error('Error:', error));
-        });
+        } else {
+            messageP.textContent = message_details.message;
+        }
+
+        // Style message
+        if (message_details.ID == sessionId) {
+            messageP.classList.add("message-container2");
+            name.style.textAlign = 'right';
+            Div.appendChild(name);
+            Div.appendChild(messageP);
+
+            const deleteB = document.createElement('button');
+            deleteB.classList.add("btn", "btn-primary", "delete-message");
+            deleteB.setAttribute('type', 'submit');
+            deleteB.textContent = 'Delete';
+            deleteB.style.marginLeft = '700px';
+            Div.appendChild(deleteB);
+
+        } else {
+            messageP.classList.add("message-container");
+            name.style.textAlign = 'left';
+            Div.appendChild(name);
+            Div.appendChild(messageP);
+        }
+
+        Div.scrollTop = Div.scrollHeight;
+    })
+    .catch(console.error);
+});
+
 
 
         // Socket that recieves messages through the 'join' route
