@@ -133,3 +133,7 @@ async function generateRSAKeys() {
   
 
 }
+(async () => {
+  const keys = await generateRSAKeys();
+  console.log(keys);
+})();

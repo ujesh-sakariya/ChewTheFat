@@ -638,8 +638,8 @@ def handle_new_message(message):
         cursor.execute(query,data)
         db.commit()
     room = chat_id
-    # This will take in the message and broadcast to all the clients 
-    emit("chat",{"message":text, "ID":id,"username":username}, room=room,include_self=False)
+    # This will take in the message and broadcast to all the chat members
+    emit("chat",{"message":text, "ID":id,"username":username,'mode':mode}, room=room,include_self=False)
     print('successful')
 
 @app.route('/get_session_id', methods=['GET'])

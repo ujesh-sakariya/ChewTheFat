@@ -1,6 +1,3 @@
-
-
-
 function gen_round_keys(key) {
     // function to rotate the last 4 bytes of the previous round key
     function rotateWord(word) {
@@ -227,6 +224,86 @@ for(i =9; i >0; i--) {
   return transpose(ciphertext);
 }
 
+// Helper to convert Base64 back to ArrayBuffer (array of binary)
+        function base64ToArrayBuffer(base64) {
+        const binaryString = atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes.buffer;
+        }
+
+
+    function decryptAndReconstructRSAKey(encryptedChunks, aesKeyRaw) {
+
+    function toMatrix(arr) {
+        return [
+            [arr[0], arr[1], arr[2],  arr[3]],
+            [arr[4], arr[5], arr[6],  arr[7]],
+            [arr[8], arr[9], arr[10], arr[11]],
+            [arr[12], arr[13], arr[14], arr[15]]
+        ];
+    }
+ 
+    const decryptedBytes = [];
+    const encryptedChunk = JSON.parse(encryptedChunks);
+
+    console.log(encryptedChunk);
+    encryptedChunk.forEach(base64Chunk => {
+        console.log('the chunk',base64Chunk);
+        const binaryString = atob(base64Chunk); // convert it to bytes
+        const bytes = Uint8Array.from(binaryString, c => c.charCodeAt(0));
+        console.log('this is bytes',bytes);
+
+        const matrix = toMatrix(bytes);
+        console.log('input into decryption',matrix,aesKeyRaw)
+        const decryptedMatrix = AES_decrypt(matrix, aesKeyRaw);
+        console.log('decrypted matrix',decryptedMatrix);
+
+        const flat = [
+            decryptedMatrix[0][0], decryptedMatrix[1][0], decryptedMatrix[2][0], decryptedMatrix[3][0],
+            decryptedMatrix[0][1], decryptedMatrix[1][1], decryptedMatrix[2][1], decryptedMatrix[3][1],
+            decryptedMatrix[0][2], decryptedMatrix[1][2], decryptedMatrix[2][2], decryptedMatrix[3][2],
+            decryptedMatrix[0][3], decryptedMatrix[1][3], decryptedMatrix[2][3], decryptedMatrix[3][3],
+        ];
+
+        console.log('Decrypted flat bytes:', flat);
+
+
+        decryptedBytes.push(...flat);
+    });
+
+    const cleanBytes = trimTrailingZeros(decryptedBytes);
+    return bytesToString(cleanBytes); // 🟢 Use this instead of BigInt
+}
+
+function trimTrailingZeros(arr) {
+    let lastNonZeroIndex = arr.length - 1;
+    while (lastNonZeroIndex >= 0 && arr[lastNonZeroIndex] === 0) {
+        lastNonZeroIndex--;
+    }
+    return arr.slice(0, lastNonZeroIndex + 1);
+}
+
+function bytesToString(bytes) {
+    const decoder = new TextDecoder();
+    return decoder.decode(Uint8Array.from(bytes));
+}
+
+
+const encryptedChunks = '["c01Gi4pWCU/5YqyokBlPpg=="]';
+console.log(decryptAndReconstructRSAKey(encryptedChunks,new Uint8Array([
+  84, 104,  97, 116, 115,
+   32, 109, 121,  32,  75,
+  117, 110, 103,  32,  70,
+  117
+])));
+
+
+
+
 let ciphertext = [
    [ 115, 77, 70, 139 ],
   [ 138, 86, 9, 79 ],
@@ -241,4 +318,13 @@ let key = new Uint8Array([
 ]);
 
 console.log(AES_decrypt(ciphertext,key));
+
+
+
+
+
+
+
+
+
 

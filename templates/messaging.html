@@ -201,12 +201,13 @@
         if (!data.is_private_chat) {
             modeSelect.disabled = true;
             modeWarning.style.display = 'inline';
-            sessionStorage.setItem('PRIVATE_KEY_CHUNKS', JSON.stringify(data.private_key_chunks));
-            sessionStorage.setItem('RECIEVER_N', data.reciever_n);
+            
 
         } else {
             modeSelect.disabled = false;
             modeWarning.style.display = 'none';
+            sessionStorage.setItem('PRIVATE_KEY_CHUNKS', JSON.stringify(data.private_key));
+            sessionStorage.setItem('RECIEVER_N', data.reciever_n);
 
             console.log("Private chat detected");
             console.log("Public Key:", data.public_key);
@@ -454,7 +455,7 @@
                 }
 
                 const matrix = toMatrix(bytes);
-                const decryptedMatrix = AES_decrypt(matrix, aesKeyRaw);  // Assuming you have AES_decrypt()
+                const decryptedMatrix = AES_decrypt(matrix, aesKeyRaw);  
 
                 // Flatten decrypted matrix column-wise
                 const flat = [
@@ -497,9 +498,9 @@ socket.on("chat", function(message_details) {
         const name = document.createElement("p");
         name.textContent = message_details.username;
 
-        const isPrivateChat = message_details.is_private_chat;
+        const isPrivateChat = message_details.mode;
 
-        if (isPrivateChat) {
+        if (isPrivateChat == 'private') {
             const aesKeyBase64 = sessionStorage.getItem('AES_KEY');
             if (!aesKeyBase64) return console.error('AES_KEY not found');
 
@@ -509,6 +510,8 @@ socket.on("chat", function(message_details) {
 
             if (!privateKeyChunks || !n_val) return console.error('Missing private key data');
 
+            console.log('AEs KEY:', aesKeyRaw);
+            console.log('Encrypted chunks',privateKeyChunks);
             const recoveredPrivateKey = decryptAndReconstructRSAKey(privateKeyChunks, aesKeyRaw);
             messageP.textContent = RSA_decrypt(message_details.message, recoveredPrivateKey, n_val);
 

@@ -1,6 +1,5 @@
 
 
-
 function gen_round_keys(key) {
     // function to rotate the last 4 bytes of the previous round key
     function rotateWord(word) {
@@ -66,6 +65,20 @@ function gen_round_keys(key) {
     return expandedKeyArr
 }
 
+let ciphertext = [
+  [ 41, 87, 64, 26 ],
+  [ 195, 20, 34, 2 ],
+  [ 80, 32, 153, 215 ],
+  [ 95, 246, 179, 58 ]
+]
+
+let key = new Uint8Array([
+  0x54, 0x68, 0x61, 0x74, 0x73, 0x20, 0x6D, 0x79,
+  0x20, 0x4B, 0x75, 0x6E, 0x67, 0x20, 0x46, 0x75
+]);
+
+// get the round keys 
+expandedKeyArr = gen_round_keys(key)
 
 const invSbox = [
   0x52, 0x09, 0x6A, 0xD5, 0x30, 0x36, 0xA5, 0x38,0xBF, 0x40, 0xA3, 0x9E, 0x81, 0xF3, 0xD7, 0xFB,
@@ -116,16 +129,6 @@ function xfourteen(a) {
   return (xtwo(xtwo(xtwo(a)))  ^ xtwo(xtwo(a)) ^ xtwo(a)) & 0xFF;
 }
 
-function transpose(matrix) {
-  let transposed = [];
-  for (let i = 0; i < 4; i++) {
-    transposed[i] = [];
-    for (let j = 0; j < 4; j++) {
-      transposed[i][j] = matrix[j][i];
-    }
-  }
-  return transposed;
-}
 
 // AES decryption algorithm 
 
@@ -146,13 +149,8 @@ function invSubBytes(word) {
   return word.map(byte => invSbox[byte]);
 }
 
-function AES_decrypt(ciphertext,key) {
-    console.log('this is the ciphertext',ciphertext);
-    console.log('this is the key',key);
- // get the round keys 
-expandedKeyArr = gen_round_keys(key) 
 // add round key 10 
-console.log('defined expanded key');
+
 for( row = 0; row < 4; row++){
   for( col = 0; col < 4; col++){
     ciphertext[row][col] ^= expandedKeyArr[col + 40][row]
@@ -223,22 +221,7 @@ for(i =9; i >0; i--) {
       ciphertext[row][col] ^= expandedKeyArr[col][row]
     }
   }
-  console.log('before transposed',ciphertext)
-  return transpose(ciphertext);
+
+for( let i = 0; i < 4; i++) {
+console.log(ciphertext[i].map(byte => byte.toString(16).padStart(2,'0')));
 }
-
-let ciphertext = [
-   [ 115, 77, 70, 139 ],
-  [ 138, 86, 9, 79 ],
-  [ 249, 98, 172, 168 ],
-  [ 144, 25, 79, 166 ]]
-
-let key = new Uint8Array([
-  84, 104,  97, 116, 115,
-   32, 109, 121,  32,  75,
-  117, 110, 103,  32,  70,
-  117
-]);
-
-console.log(AES_decrypt(ciphertext,key));
-
