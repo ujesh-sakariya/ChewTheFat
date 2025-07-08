@@ -144,12 +144,10 @@ function invSubBytes(word) {
 }
 
 function AES_decrypt(ciphertext,key) {
-    console.log('this is the ciphertext',ciphertext);
-    console.log('this is the key',key);
+   
  // get the round keys 
 expandedKeyArr = gen_round_keys(key) 
 // add round key 10 
-console.log('defined expanded key');
 for( row = 0; row < 4; row++){
   for( col = 0; col < 4; col++){
     ciphertext[row][col] ^= expandedKeyArr[col + 40][row]
@@ -220,7 +218,6 @@ for(i =9; i >0; i--) {
       ciphertext[row][col] ^= expandedKeyArr[col][row]
     }
   }
-  console.log('before transposed',ciphertext)
   return transpose(ciphertext);
 }
 
@@ -250,81 +247,41 @@ for(i =9; i >0; i--) {
     const decryptedBytes = [];
     const encryptedChunk = JSON.parse(encryptedChunks);
 
-    console.log(encryptedChunk);
     encryptedChunk.forEach(base64Chunk => {
-        console.log('the chunk',base64Chunk);
         const binaryString = atob(base64Chunk); // convert it to bytes
         const bytes = Uint8Array.from(binaryString, c => c.charCodeAt(0));
-        console.log('this is bytes',bytes);
 
         const matrix = toMatrix(bytes);
-        console.log('input into decryption',matrix,aesKeyRaw)
         const decryptedMatrix = AES_decrypt(matrix, aesKeyRaw);
-        console.log('decrypted matrix',decryptedMatrix);
 
-        const flat = [
-            decryptedMatrix[0][0], decryptedMatrix[1][0], decryptedMatrix[2][0], decryptedMatrix[3][0],
-            decryptedMatrix[0][1], decryptedMatrix[1][1], decryptedMatrix[2][1], decryptedMatrix[3][1],
-            decryptedMatrix[0][2], decryptedMatrix[1][2], decryptedMatrix[2][2], decryptedMatrix[3][2],
-            decryptedMatrix[0][3], decryptedMatrix[1][3], decryptedMatrix[2][3], decryptedMatrix[3][3],
-        ];
-
-        console.log('Decrypted flat bytes:', flat);
-
-
-        decryptedBytes.push(...flat);
+        decryptedBytes.push(...decryptedMatrix);
     });
 
     const cleanBytes = trimTrailingZeros(decryptedBytes);
-    return bytesToString(cleanBytes); // 🟢 Use this instead of BigInt
-}
+    return bytesToString(cleanBytes); 
 
-function trimTrailingZeros(arr) {
-    let lastNonZeroIndex = arr.length - 1;
-    while (lastNonZeroIndex >= 0 && arr[lastNonZeroIndex] === 0) {
-        lastNonZeroIndex--;
-    }
-    return arr.slice(0, lastNonZeroIndex + 1);
+function trimTrailingZeros(arr2D) {
+    return arr2D.map(row => {
+        let lastNonZeroIndex = row.length - 1;
+        while (lastNonZeroIndex >= 0 && row[lastNonZeroIndex] === 0) {
+            lastNonZeroIndex--;
+        }
+        return row.slice(0, lastNonZeroIndex + 1);
+    });
 }
 
 function bytesToString(bytes) {
+    let flat = bytes.flat();
     const decoder = new TextDecoder();
-    return decoder.decode(Uint8Array.from(bytes));
+    return decoder.decode(Uint8Array.from(flat));
+}
 }
 
 
-const encryptedChunks = '["c01Gi4pWCU/5YqyokBlPpg=="]';
-console.log(decryptAndReconstructRSAKey(encryptedChunks,new Uint8Array([
-  84, 104,  97, 116, 115,
-   32, 109, 121,  32,  75,
-  117, 110, 103,  32,  70,
-  117
-])));
-
-
-
-
-let ciphertext = [
-   [ 115, 77, 70, 139 ],
-  [ 138, 86, 9, 79 ],
-  [ 249, 98, 172, 168 ],
-  [ 144, 25, 79, 166 ]]
-
-let key = new Uint8Array([
-  84, 104,  97, 116, 115,
-   32, 109, 121,  32,  75,
-  117, 110, 103,  32,  70,
-  117
-]);
-
-console.log(AES_decrypt(ciphertext,key));
-
-
-
-
-
-
-
-
-
-
+///const encryptedChunks = '["c01Gi4pWCU/5YqyokBlPpg==", "jl3GVjvH5s3kT/3/vHfTNg==" ]';
+///console.log(decryptAndReconstructRSAKey(encryptedChunks,new Uint8Array([
+/// 84, 104,  97, 116, 115,
+/// 32, 109, 121,  32,  75,
+/// 117, 110, 103,  32,  70,
+/// 117
+///])))

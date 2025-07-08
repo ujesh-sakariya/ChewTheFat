@@ -265,7 +265,6 @@ for (let col = 0; col < 4; col++) {
 
   const encoder = new TextEncoder();
   const bytes = encoder.encode(privateKeyStr);
-  console.log('output of textencoder', bytes);
 
   const encryptedChunks = [];
 
@@ -286,18 +285,15 @@ for (let col = 0; col < 4; col++) {
           [chunkArr[3], chunkArr[7], chunkArr[11], chunkArr[15]]
       ];
 
-      console.log('this is the input',matrix,aesKeyRaw);
       let encryptedMatrix = AES_encrypt(matrix, aesKeyRaw);
-      console.log('output',encryptedMatrix);
       encryptedChunks.push(flattenMatrix(encryptedMatrix));
-      console.log('flattened matrix',encryptedChunks);
   }
   
 
   return encryptedChunks;
 }
 
-let arraybuffer = chunkAndEncryptRSAKey('1234567890123456',new Uint8Array([
+let arraybuffer = chunkAndEncryptRSAKey('12345678901234567890',new Uint8Array([
   0x54, 0x68, 0x61, 0x74, 0x73, 0x20, 0x6D, 0x79,
   0x20, 0x4B, 0x75, 0x6E, 0x67, 0x20, 0x46, 0x75
 ]));
@@ -317,7 +313,6 @@ let arraybuffer = chunkAndEncryptRSAKey('1234567890123456',new Uint8Array([
   const safeEncryptedPrivateKey = encryptedPrivateKeyBase64.map(element => element.toString());
 
 
-console.log(safeEncryptedPrivateKey);
 
 
 let Plaintext = [
@@ -332,7 +327,7 @@ let Key = new Uint8Array([
   0x20, 0x4B, 0x75, 0x6E, 0x67, 0x20, 0x46, 0x75
 ]);
 
-console.log('practice',AES_encrypt(Plaintext,Key));
+//console.log('practice',AES_encrypt(Plaintext,Key));
 
 
 

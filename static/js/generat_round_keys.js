@@ -1,5 +1,3 @@
-
-
 function gen_round_keys(key) {
     // function to rotate the last 4 bytes of the previous round key
     function rotateWord(word) {
