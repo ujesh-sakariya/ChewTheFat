@@ -53,18 +53,21 @@ def login():
         # Obtains the username and password from the data that is posted
         username = request.form.get('username')      
         password = request.form.get('password')
-        password = generate_password_hash(password)
+       
 
         
 
         #check if a account exists with the given username and pasoword
-        query = ("SELECT username, password, email FROM accounts WHERE username = %s AND password = %s")
-        cursor.execute(query,(username,password))
+        query = ("SELECT username, password, email FROM accounts WHERE username = %s ")
+        cursor.execute(query,(username,))
         acc = cursor.fetchone()
+        print(acc)
         if acc == None:
             # Output error message 
             return render_template('login.html',fail = 'Incorrect username or password')
         else:
+            if not (check_password_hash(acc[1],password)):
+                return render_template('login.html',fail = 'Incorrect username or password')
 
             # set the session to the current user 
             session["name"] = username
