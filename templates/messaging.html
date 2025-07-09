@@ -87,11 +87,11 @@
     let global_index = 0
     document.addEventListener('DOMContentLoaded', function() {
 
+        // disable button as no chat would be selected 
         const clearBtn = document.getElementById('clearconversation');
         clearBtn.disabled = true;           
-       // Add a click event listener to the document
         document.addEventListener('click', function(event) {
-            // Check if the clicked element is a button with the class 'chat-button'
+            // handle choosing a chat to view
             if (event.target.classList.contains('chat-button')) {
                 var index = -1;
 
@@ -102,15 +102,10 @@
                     }
                 });
 
-                // Log or perform any action with the clicked button's index
-                console.log('Button clicked at index:', index);
-
                 global_index = index;
-
-                // Store the index in the array
                 getchat(index);
 
-               // Use setTimeout to add a delay
+               // Use setTimeout to add a delay when leaving a room and joining a room
                 setTimeout(function() {
                     socket.emit('leave', {}, function(leaveData) {
                         // Wait for the leave function to complete
@@ -154,10 +149,6 @@
         // Update chat title
         document.getElementById("chat-title").textContent = data.openchat;
 
-        // Show/hide clear conversation button
-        const clearBtn = document.getElementById('clearconversation');
-        clearBtn.style.display = data.open === 'yes' ? 'inline-block' : 'none';
-
         // Inject messages
         const chatContainer = document.getElementById("allthechats");
         chatContainer.innerHTML = "";  // Clear old messages
@@ -198,7 +189,7 @@
         const modeSelect = document.getElementById('mode-select');
         const modeWarning = document.getElementById('mode-warning');
 
-        // Default to "standard" mode in sessionStorage and dropdown
+        // Default to standard mode in sessionStorage and dropdown
         modeSelect.value = 'standard';
         sessionStorage.setItem('chat_mode_' + index, 'standard');
 
@@ -232,90 +223,84 @@
     sessionStorage.setItem('chat_mode_' + global_index, selectedMode);
     });
     
-        // Add a click event listener to the document
-        document.addEventListener('click', function(event) {
-            // Check if the clicked element is a button with the class 'chat-button'
-            if (event.target.classList.contains('delete-message')) {
-                var index = -1;
-    
-                // Iterate through the buttons to find the correct index
-                document.querySelectorAll('.delete-message').forEach(function(button, i) {
-                    if (button === event.target) {
-                        index = i;
-                    }
-                });
+    document.addEventListener('click', function(event) {
+        // Check if the clicked element is a button with the class 'chat-button'
+        if (event.target.classList.contains('delete-message')) {
+            var index = -1;
 
-                // Log or perform any action with the clicked button's index
-                console.log('Button clicked at index:', index);
-                // Store the index in the array
-                deletemessage(index);
-            }
-        });
-
-        function deletemessage(index) {
-
-            fetch('deleteMessage', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-            body: JSON.stringify({ mesg: index, index: global_index })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
+            // Iterate through the buttons to find the correct index
+            document.querySelectorAll('.delete-message').forEach(function(button, i) {
+                if (button === event.target) {
+                    index = i;
                 }
-                getchat(global_index);
-            })
-            .catch(error => {
-                console.error('Error deleting message:', error);
             });
 
+            // Log or perform any action with the clicked button's index
+            console.log('Button clicked at index:', index);
+            // Store the index in the array
+            deletemessage(index);
         }
-    
-    
-       
-                // Add a click event listener to the document
-        document.addEventListener('click', function(event) {
-            // Check if the clicked element has the id 'clearconversation'
-            if (event.target.id === 'clearconversation') {
-                // Log or perform any action when the 'clearconversation' button is clicked
-                console.log('Clear conversation button clicked');
-                // Call the function to handle the button click
-                clearconversation();
+    });
+
+    function deletemessage(index) {
+
+        fetch('deleteMessage', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+        body: JSON.stringify({ mesg: index, index: global_index })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
             }
+            getchat(global_index);
+        })
+        .catch(error => {
+            console.error('Error deleting message:', error);
         });
 
-    
-    
-        // Define submitchanges outside of the click event listener
-        function clearconversation() {
-            fetch('clearconversation', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({'index':global_index})  
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-            getchat(global_index);
-            })
-            .catch(error => console.error('Error:', error));
-        }
+    }
 
-         
+
+       
+                
+    document.addEventListener('click', function(event) {
+        if (event.target.id === 'clearconversation') {
+            console.log('Clear conversation button clicked');
+            clearconversation();
+        }
+    });
+
+    
+    
+    function clearconversation() {
+        fetch('clearconversation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({'index':global_index})  
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+        getchat(global_index);
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+        
 
                 
+    // sort out socket stuff
+    const socket = io();
+    socket.on('connect', function() {
+        console.log('Connected to server');
+    });
 
-        // Make sure socket.io is properly imported and initialized
-        const socket = io();
-        socket.on('connect', function() {
-            console.log('Connected to server');
-        });
-    
     
     function sendMessage() {
     const messageInput = document.getElementById('send');
@@ -342,6 +327,7 @@
         const encryptedMessage = RSA_encrypt(message, publicKey, nVal);
         console.log(encryptedMessage,publicKey,nVal);
         // Send via Socket.IO emit
+
         socket.emit('new_message', {
             message: encryptedMessage.toString(),
             index: global_index,  
@@ -462,7 +448,7 @@
     }
 
     // Listen for incoming messages from server
-socket.on("chat", function(message_details) {
+    socket.on("chat", function(message_details) {
     console.log('Message received', message_details);
 
     fetch('/get_session_id')
@@ -526,27 +512,18 @@ socket.on("chat", function(message_details) {
 
         // Socket that recieves messages through the 'join' route
         socket.on('joined_room', function(data) {
-            // Get the notifaction which was emitted
             const message = data.joined;
-            // access the div of the chats
             const Div56 = document.getElementById("allthechats");
             
-            // Create a paragraph element
             const notification = document.createElement("p");
-            // add the contnets of the emitted data to the notifcation tag 
             notification.textContent = message;
 
-            // Append the paragraph element to the chat container
             Div56.appendChild(notification);
 
-            // Log a message to the console
             console.log('Message added to the DOM yes');
 
         });
 
-        socket.on('test',function(data){
-            console.log('this works');
-        })
 
 
 })

@@ -36,6 +36,9 @@ socketio = SocketIO(app)
 
 import json
 
+from werkzeug.security import generate_password_hash, check_password_hash
+
+
 
 # default route - takes the user to the homepage to choose too log in or register an account 
 @app.route("/")
@@ -50,6 +53,8 @@ def login():
         # Obtains the username and password from the data that is posted
         username = request.form.get('username')      
         password = request.form.get('password')
+        password = generate_password_hash(password)
+
         
 
         #check if a account exists with the given username and pasoword
@@ -83,6 +88,8 @@ def register():
         #get the data from register
         username = request.form.get('name')      
         password = request.form.get('psswd')
+        password = generate_password_hash(password)
+
         email = request.form.get('email')
         data = [username]
 
@@ -689,6 +696,7 @@ def changePassword():
         current = request.form.get('originalpassword')
         print(current)
         new = request.form.get('newpassword')
+        new = generate_password_hash(new)
         # find the current users password
         username = session['name']
         data = [username]
@@ -697,7 +705,7 @@ def changePassword():
         password = (cursor.fetchone()[0])
         print(password)
         # check if the entered paossword is the same or not
-        if password == current:
+        if check_password_hash(password,current): 
             # if the same, update the new password in the databse
             query = ("UPDATE accounts SET password = %s WHERE username = %s")
             data = [new,username]
@@ -724,5 +732,5 @@ def clearconversation():
     cursor.execute(query,(data))
     db.commit()
 
-    return '', 204  # No Content
+    return '', 204  
 
