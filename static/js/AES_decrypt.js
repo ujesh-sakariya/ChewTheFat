@@ -220,22 +220,6 @@ for(i =9; i >0; i--) {
       ciphertext[row][col] ^= expandedKeyArr[col][row]
     }
   }
-  console.log('before transposed',ciphertext)
   return transpose(ciphertext);
 }
-
-let ciphertext = [
-   [ 115, 77, 70, 139 ],
-  [ 138, 86, 9, 79 ],
-  [ 249, 98, 172, 168 ],
-  [ 144, 25, 79, 166 ]]
-
-let key = new Uint8Array([
-  84, 104,  97, 116, 115,
-   32, 109, 121,  32,  75,
-  117, 110, 103,  32,  70,
-  117
-]);
-
-console.log(AES_decrypt(ciphertext,key));
 

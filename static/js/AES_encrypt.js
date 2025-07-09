@@ -289,45 +289,31 @@ for (let col = 0; col < 4; col++) {
       encryptedChunks.push(flattenMatrix(encryptedMatrix));
   }
   
-
-  return encryptedChunks;
-}
-
-let arraybuffer = chunkAndEncryptRSAKey('12345678901234567890',new Uint8Array([
-  0x54, 0x68, 0x61, 0x74, 0x73, 0x20, 0x6D, 0x79,
-  0x20, 0x4B, 0x75, 0x6E, 0x67, 0x20, 0x46, 0x75
-]));
-
- function arrayBufferToBase64(buffer) {
+  function arrayBufferToBase64(buffer) {
       let binary = '';
       const bytes = new Uint8Array(buffer);
       bytes.forEach(b => binary += String.fromCharCode(b));
       return btoa(binary);
     }
 
-     // Convert each encrypted chunk (array of numbers) to Base64 string
-        const encryptedPrivateKeyBase64 = arraybuffer.map(chunk => {
-            return arrayBufferToBase64(new Uint8Array(chunk));
-        });
+  // Convert each encrypted chunk (array of numbers) to Base64 string
+    const encryptedPrivateKeyBase64 = encryptedChunks.map(chunk => {
+        return arrayBufferToBase64(new Uint8Array(chunk));
+    });
   
   const safeEncryptedPrivateKey = encryptedPrivateKeyBase64.map(element => element.toString());
 
 
 
+  return safeEncryptedPrivateKey;
+}
 
-let Plaintext = [
-  [1, 2, 3, 4],   // 0x54, 0x77, 0x6F, 0x21
-  [5, 6, 7, 8],   // 0x4F, 0x6E, 0x65, 0x20
-  [9, 0, 1, 2],  // 0x4E, 0x69, 0x6E, 0x65
-  [3, 4, 5, 6]    // 0x20, 0x54, 0x77, 0x6F
-];
 
-let Key = new Uint8Array([
+ 
+
+    
+
+console.log(chunkAndEncryptRSAKey('12345678901234567890',new Uint8Array([
   0x54, 0x68, 0x61, 0x74, 0x73, 0x20, 0x6D, 0x79,
   0x20, 0x4B, 0x75, 0x6E, 0x67, 0x20, 0x46, 0x75
-]);
-
-//console.log('practice',AES_encrypt(Plaintext,Key));
-
-
-
+])));

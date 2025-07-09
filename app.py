@@ -724,5 +724,5 @@ def clearconversation():
     cursor.execute(query,(data))
     db.commit()
 
-    return redirect (url_for('openchats'))
+    return '', 204  # No Content
 
