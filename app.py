@@ -3,7 +3,7 @@ from flask import Flask, render_template, request, redirect, session, url_for, s
 
 # Connect to the local databse 
 import mysql.connector
-db = mysql.connector.connect(user='root', password='root@301124',
+db = mysql.connector.connect(user='root', password='#########',
                               host='localhost',
                               database='messaging')
 # creating a cursor
