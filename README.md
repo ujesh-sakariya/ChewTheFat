@@ -17,7 +17,7 @@ A secure, full-stack messaging application that was developed as part of my A-Le
   - Notifications for when a user is on the chat
   - Message deletion (individual or entire conversation)
 
-# 2 Modes
+## 2 Modes
 
 - **End-to-End Encrypted Mode (E2E)**
   - Messages are encrypted client-side
