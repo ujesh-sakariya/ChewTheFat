@@ -16,6 +16,7 @@ A secure, full-stack messaging application that was developed as part of my A-Le
   - Real-time messaging with WebSockets
   - Notifications for when a user is on the chat
   - Message deletion (individual or entire conversation)
+  - Send permanent and dissapearing messages
 
 ## 2 Modes
 
