@@ -2,7 +2,7 @@
 
 # Secure E2E Messaging Application
 
-A secure, full-stack messaging application that was developed as part of my A-Level Computer Science project. The platform supports both standard and end-to-end encrypted communication using RSA and AES encryption, allowing users to safely chat with security and privacy at its core.
+Chew The Fat is a secure, real-time messaging app that combines RSA and AES encryption with 2FA and socket-based messaging to provide a privacy-first user chat experience.
 
 ## 🚀 Features
 
