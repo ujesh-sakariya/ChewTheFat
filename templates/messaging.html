@@ -1,0 +1,534 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Messaging
+{% endblock %}
+{% block head %}
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+{% endblock %}
+
+{% block main %} 
+<script src="{{ url_for('static', filename='js/RSA_encrypt.js') }}"></script>
+<script src="{{ url_for('static', filename='js/RSA_decrypt.js') }}"></script>
+<script src="{{ url_for('static', filename='js/AES_decrypt.js') }}"></script>
+<div class="container text-center">
+    <div class="row">
+        <div class="col -md-3 scrollable-div" style="width:300px; height: 400px; overflow-y: auto; overflow-x: hidden;">
+            <!-- this allows the user to access the manage friends page-->
+            <form action="/manageFriends" name = manageFriends >
+            <p style="font-weight: bold;">Chats <span class="inline-button"></span> <div class="d-flex justify-content-center mb-3"><button class="btn btn-primary">Manage Friends/Chats</button></div></p>
+            </form>
+    
+            <!-- this table will display the users chats-->
+            <table class="table">
+                <tbody>
+                    <!-- First check if there are any chats-->
+                    {% if chat_list %}
+                    <!-- Output all the users chats-->
+                        {% for chat in chat_list %}
+                            <tr>
+                                <!-- turn the row into a button so users can click on it-->
+                                <td><button class="btn btn-primary chat-button">{{ chat }}</button></td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td>No chats available</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        <!-- This code will display the contnets of each chat -->
+        <div class="col-md-8 " >
+            <div id='refresh'>
+                <div class='d-flex'>
+                    <h1 id="chat-title"></h1>
+                    <!-- Allow the user to choose the mode-->
+                    <div style="margin-bottom: 10px;">
+                    <label for="mode-select">Chat Mode:</label>
+                   <select class="form-select w-auto mx-2" id="mode-select">
+                        <option value="standard">Standard (Stored, Unencrypted)</option>
+                        <option value="private">Private (E2EE, Ephemeral)</option>
+                    </select>
+                    <small id="mode-warning" style="color: red; display: none;">Private mode disabled for group chats</small>
+                    </div>
+                    <div class="d-flex justify-content-end mb-2">
+                        <button class="btn btn-danger btn-clear-convo ms-auto py-1 px-3" style="font-size: 0.95rem;">Clear Conversation</button>
+                    </div>
+                </div>
+                <div class="col-md-9 scrollable-div" id='allthechats' style="width: 800px; height: 400px; overflow-y: auto; overflow-x: hidden;">
+            <!-- Messages will be injected here via JS -->
+                </div>
+            </div>
+
+            <br>
+            <br>
+            <div class="col-md-15" style="height: 13vh;">
+                <!-- form that allows a user to send a message  -->
+                <br>
+                <br>
+                <div class="mb-3">
+                    <div class="d-flex" style="position: relative;">
+                        <div class="fixed" style="position: absolute; bottom: 0; width: 100%;">
+                            <div class="input-group">
+                            <input type="text" class="form-control" id="send" placeholder="Type a message...">
+                            <button class="btn btn-primary" type="button" id="sendBtn">Send</button>
+                            </div>
+                        </div>
+                    </div>
+                <div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let global_index = 0
+    document.addEventListener('DOMContentLoaded', function() {
+
+        // disable button as no chat would be selected 
+        const clearBtn = document.getElementById('clearconversation');
+        clearBtn.disabled = true;           
+        document.addEventListener('click', function(event) {
+            // handle choosing a chat to view
+            if (event.target.classList.contains('chat-button')) {
+                var index = -1;
+
+                // Iterate through the buttons to find the correct index
+                document.querySelectorAll('.chat-button').forEach(function(button, i) {
+                    if (button === event.target) {
+                        index = i;
+                    }
+                });
+
+                global_index = index;
+                getchat(index);
+
+               // Use setTimeout to add a delay when leaving a room and joining a room
+                setTimeout(function() {
+                    socket.emit('leave', {}, function(leaveData) {
+                        // Wait for the leave function to complete
+                        console.log(leaveData);
+
+                        // After the leave function is complete, trigger the join function
+                        setTimeout(function() {
+                            socket.emit('join', {value: index}, function(data) {
+                                console.log(data);
+                            });
+                        }, 100);  // Wait 0.1 seconds
+                    });
+                }, 500);  // Wait 0.5 seconds 
+
+
+            }
+        });
+
+    function getchat(index) {
+
+    clearBtn.disabled = false;           
+
+    fetch('/openchats', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ chat: index })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log(data);
+        currentChatData = data;  // Store the JSON in the global variable
+
+
+        // Update chat title
+        document.getElementById("chat-title").textContent = data.openchat;
+
+        // Inject messages
+        const chatContainer = document.getElementById("allthechats");
+        chatContainer.innerHTML = "";  // Clear old messages
+
+        if (data.message && data.message.length > 0) {
+            data.message.forEach(msg => {
+                const name = msg[0];
+                const messageText = msg[1];
+                const isCurrentUser = msg[2] === 1;
+
+                const nameP = document.createElement("p");
+                nameP.textContent = name;
+                nameP.style.textAlign = isCurrentUser ? "right" : "left";
+
+                const messageDiv = document.createElement("div");
+                messageDiv.className = isCurrentUser ? "message-container2" : "message-container";
+                messageDiv.innerHTML = `<p>${messageText}</p>`;
+
+                chatContainer.appendChild(nameP);
+                chatContainer.appendChild(messageDiv);
+
+                if (isCurrentUser) {
+                    const deleteBtn = document.createElement("button");
+                    deleteBtn.className = "btn btn-primary delete-message";
+                    deleteBtn.textContent = "Delete";
+                    deleteBtn.style.marginLeft = "700px";
+                    deleteBtn.type = "button";
+                    chatContainer.appendChild(deleteBtn);
+                }
+            });
+        } else {
+            chatContainer.innerHTML = "<p>No previous messages</p>";
+            }
+
+        // Scroll to bottom
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+
+        const modeSelect = document.getElementById('mode-select');
+        const modeWarning = document.getElementById('mode-warning');
+
+        // Default to standard mode in sessionStorage and dropdown
+        modeSelect.value = 'standard';
+        sessionStorage.setItem('chat_mode_' + index, 'standard');
+
+        console.log(" chat mode is" + data.is_private_chat)
+        // Handle encryption logic
+        if (!data.is_private_chat) {
+            modeSelect.disabled = true;
+            modeWarning.style.display = 'inline';
+            
+
+        } else {
+            modeSelect.disabled = false;
+            modeWarning.style.display = 'none';
+            sessionStorage.setItem('PRIVATE_KEY_CHUNKS', JSON.stringify(data.private_key));
+            sessionStorage.setItem('RECIEVER_N', data.reciever_n);
+
+            console.log("Private chat detected");
+            console.log("Public Key:", data.public_key);
+            console.log("Private Key:", data.private_key);
+        }
+    })
+    .catch(error => console.error('Error:', error));
+    }
+
+
+
+    // handle user selecting a mode
+    document.getElementById('mode-select').addEventListener('change', function() {
+    const selectedMode = this.value;
+    console.log('Mode changed to:', selectedMode);
+    sessionStorage.setItem('chat_mode_' + global_index, selectedMode);
+    });
+    
+    document.addEventListener('click', function(event) {
+        // Check if the clicked element is a button with the class 'chat-button'
+        if (event.target.classList.contains('delete-message')) {
+            var index = -1;
+
+            // Iterate through the buttons to find the correct index
+            document.querySelectorAll('.delete-message').forEach(function(button, i) {
+                if (button === event.target) {
+                    index = i;
+                }
+            });
+
+            // Log or perform any action with the clicked button's index
+            console.log('Button clicked at index:', index);
+            // Store the index in the array
+            deletemessage(index);
+        }
+    });
+
+    function deletemessage(index) {
+
+        fetch('deleteMessage', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+        body: JSON.stringify({ mesg: index, index: global_index })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            getchat(global_index);
+        })
+        .catch(error => {
+            console.error('Error deleting message:', error);
+        });
+
+    }
+
+
+       
+                
+    document.addEventListener('click', function(event) {
+        if (event.target.id === 'clearconversation') {
+            console.log('Clear conversation button clicked');
+            clearconversation();
+        }
+    });
+
+    
+    
+    function clearconversation() {
+        fetch('clearconversation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({'index':global_index})  
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+        getchat(global_index);
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+        
+
+                
+    // sort out socket stuff
+    const socket = io();
+    socket.on('connect', function() {
+        console.log('Connected to server');
+    });
+
+    
+    function sendMessage() {
+    const messageInput = document.getElementById('send');
+    const message = messageInput.value.trim();
+
+    if (message === '') {
+        return; // Don't send empty messages
+    }
+
+    if (!currentChatData) {
+        console.error("No chat selected.");
+        return;
+    }
+
+    const selectedMode = sessionStorage.getItem('chat_mode_' + global_index);
+
+    if (selectedMode === "private") {
+        console.log("Private chat - encrypting message");
+
+        const publicKey = BigInt(currentChatData.public_key);
+        const nVal = BigInt(currentChatData.sender_n);
+
+        console.log(message);
+        const encryptedMessage = RSA_encrypt(message, publicKey, nVal);
+        console.log(encryptedMessage,publicKey,nVal);
+        // Send via Socket.IO emit
+
+        socket.emit('new_message', {
+            message: encryptedMessage.toString(),
+            index: global_index,  
+            selectedMode: 'private'
+        });
+
+    } else {
+        console.log("Standard chat - sending message");
+
+        socket.emit('new_message', {
+            message: message,
+            index: global_index,
+            selectedMode: 'standard'
+        });
+    }
+
+    messageInput.value = ''; // Clear input
+    displayOwnMessage(message,selectedMode);
+
+}
+
+    
+    const sendButton = document.getElementById('messagetosend');
+    sendButton.addEventListener('click',sendMessage)
+
+    const messageInput = document.getElementById('send');
+
+    messageInput.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();   
+            sendMessage();            
+        }
+    });
+    
+    function displayOwnMessage(plainTextMessage,selectedMode) {
+    const Div = document.getElementById("allthechats");
+
+    const messageP = document.createElement("p");
+    const name = document.createElement("p");
+
+    name.textContent = sessionStorage.getItem('name') || "You";
+
+    messageP.textContent = plainTextMessage;
+
+    messageP.classList.add("message-container2");
+    name.style.textAlign = 'right';
+    Div.appendChild(name);
+    Div.appendChild(messageP);
+    
+    if (selectedMode != 'private') {
+        const deleteB = document.createElement('button');
+        deleteB.classList.add("btn", "btn-primary", "delete-message");
+        deleteB.setAttribute('type', 'submit');
+        deleteB.textContent = 'Delete';
+        deleteB.style.marginLeft = '700px';
+        Div.appendChild(deleteB);
+    }
+
+    Div.scrollTop = Div.scrollHeight;
+
+    }
+
+
+    // Helper to convert Base64 back to ArrayBuffer (array of binary)
+    function base64ToArrayBuffer(base64) {
+    const binaryString = atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes.buffer;
+    }
+
+
+    function decryptAndReconstructRSAKey(encryptedChunks, aesKeyRaw) {
+
+        function toMatrix(arr) {
+            return [
+                [arr[0], arr[1], arr[2],  arr[3]],
+                [arr[4], arr[5], arr[6],  arr[7]],
+                [arr[8], arr[9], arr[10], arr[11]],
+                [arr[12], arr[13], arr[14], arr[15]]
+            ];
+        }
+ 
+        const decryptedBytes = [];
+        const encryptedChunk = JSON.parse(encryptedChunks);
+
+        encryptedChunk.forEach(base64Chunk => {
+            const binaryString = atob(base64Chunk); // convert it to bytes
+            const bytes = Uint8Array.from(binaryString, c => c.charCodeAt(0));
+
+            const matrix = toMatrix(bytes);
+            const decryptedMatrix = AES_decrypt(matrix, aesKeyRaw);
+
+            decryptedBytes.push(...decryptedMatrix);
+        });
+
+        const cleanBytes = trimTrailingZeros(decryptedBytes);
+        return bytesToString(cleanBytes); 
+
+        function trimTrailingZeros(arr2D) {
+            return arr2D.map(row => {
+                let lastNonZeroIndex = row.length - 1;
+                while (lastNonZeroIndex >= 0 && row[lastNonZeroIndex] === 0) {
+                    lastNonZeroIndex--;
+                }
+                return row.slice(0, lastNonZeroIndex + 1);
+            });
+        }
+
+        function bytesToString(bytes) {
+            let flat = bytes.flat();
+            const decoder = new TextDecoder();
+            return decoder.decode(Uint8Array.from(flat));
+        }
+    }
+
+    // Listen for incoming messages from server
+    socket.on("chat", function(message_details) {
+    console.log('Message received', message_details);
+
+    fetch('/get_session_id')
+    .then(response => response.json())
+    .then(data => {
+        const sessionId = data.session_id;
+        const Div = document.getElementById("allthechats");
+
+        const messageP = document.createElement("p");
+        const name = document.createElement("p");
+        name.textContent = message_details.username;
+
+        const isPrivateChat = message_details.mode;
+
+        if (isPrivateChat == 'private') {
+            const aesKeyBase64 = sessionStorage.getItem('AES_KEY');
+            if (!aesKeyBase64) return console.error('AES_KEY not found');
+
+            const aesKeyRaw = new Uint8Array(base64ToArrayBuffer(aesKeyBase64));
+            const privateKeyChunks = JSON.parse(sessionStorage.getItem('PRIVATE_KEY_CHUNKS'));
+            const n_val = sessionStorage.getItem('RECIEVER_N');
+
+            if (!privateKeyChunks || !n_val) return console.error('Missing private key data');
+
+            console.log('AEs KEY:', aesKeyRaw);
+            console.log('Encrypted chunks',privateKeyChunks);
+            const recoveredPrivateKey = decryptAndReconstructRSAKey(privateKeyChunks, aesKeyRaw);
+            messageP.textContent = RSA_decrypt(message_details.message, recoveredPrivateKey, n_val);
+
+        } else {
+            messageP.textContent = message_details.message;
+        }
+
+        // Style message
+        if (message_details.ID == sessionId) {
+            messageP.classList.add("message-container2");
+            name.style.textAlign = 'right';
+            Div.appendChild(name);
+            Div.appendChild(messageP);
+
+            const deleteB = document.createElement('button');
+            deleteB.classList.add("btn", "btn-primary", "delete-message");
+            deleteB.setAttribute('type', 'submit');
+            deleteB.textContent = 'Delete';
+            deleteB.style.marginLeft = '700px';
+            Div.appendChild(deleteB);
+
+        } else {
+            messageP.classList.add("message-container");
+            name.style.textAlign = 'left';
+            Div.appendChild(name);
+            Div.appendChild(messageP);
+        }
+
+        Div.scrollTop = Div.scrollHeight;
+    })
+    .catch(console.error);
+});
+
+
+
+        // Socket that recieves messages through the 'join' route
+        socket.on('joined_room', function(data) {
+            const message = data.joined;
+            const Div56 = document.getElementById("allthechats");
+            
+            const notification = document.createElement("p");
+            notification.textContent = message;
+
+            Div56.appendChild(notification);
+
+            console.log('Message added to the DOM yes');
+
+        });
+
+
+
+})
+
+</script>
+    
+
+{% endblock %}

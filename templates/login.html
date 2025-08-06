@@ -1,0 +1,75 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    login
+{% endblock %}
+
+{% block main %}
+<script>
+  // Javascript to perform frontend validation 
+  document.addEventListener("DOMContentLoaded", () => {
+
+    function deriveAESKey(password) {
+        const encoder = new TextEncoder();
+        // Encode password to raw bytes
+        const passBuffer = encoder.encode(password);
+
+        // Hash the password using SHA-256 to get 256-bit key
+        return crypto.subtle.digest('SHA-256', passBuffer).then(hashBuffer => {
+        const hashArray = new Uint8Array(hashBuffer); // Convert to byte array
+        return Array.from(hashArray.slice(0, 16));    // Take first 16 bytes as array of numbers
+    });
+        }
+
+    function arrayBufferToBase64(buffer) {
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        for (let b of bytes) {
+            binary += String.fromCharCode(b);
+        }
+        return btoa(binary);
+    }
+
+  
+    const form = document.getElementById('login');
+
+    form.addEventListener('submit',async function(event) {
+      
+      event.preventDefault();  // Stop default form submission
+
+    
+      let username = form.elements['username'].value;
+      let password = form.elements['password'].value;
+      
+      if (username === "" || password === "") {
+          alert("All fields must be filled out");
+          return;
+      }
+      console.log('user entered credentials')
+      let AES_key =  await deriveAESKey(password);
+
+          // Store key for later - needs to be base64 string
+          sessionStorage.setItem('AES_KEY', arrayBufferToBase64(AES_key));
+
+          // submit the form
+          form.submit()
+    })
+  });
+</script>
+<div class="d-flex justify-content-center align-items-center min-vh-100">
+    <div class = 'centreForm' >
+    <!-- form that takes in the users username and passowrd and send it to the login route -->
+    <form action="/login" method="post" name = login id="login">
+        <div class="mb-3">
+            <input autocomplete="off" autofocus class="form-control mx-auto w-auto" id="username" name="username" placeholder="Username" type="text" required >
+        </div>
+        <div class="mb-3">
+            <input class="form-control mx-auto w-auto " id="password" name="password" placeholder="Password" type="password" required>
+        </div>
+        <button class="btn btn-primary" style="margin-left: 47%" type="submit">Log In</button>
+    </form>
+    <p style="margin-left: 38%" class = error >{{ fail }}</p>
+    </div>
+</div>
+
+{% endblock %}

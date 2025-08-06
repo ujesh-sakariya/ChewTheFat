@@ -1,0 +1,168 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    2FA
+{% endblock %}
+  
+{% block main %}
+<script src="{{ url_for('static', filename='js/RSA_gen_keys.js') }}"></script>
+<script src="{{ url_for('static', filename='js/AES_encrypt.js') }}"></script>
+
+
+<!-- instructions to carry out the 2fa-->
+  <h1>Instructions!</h1>
+  <div class="instructions text-center mx-auto" style="max-width: 500px;">
+    <ul class="text-start mx-auto" style="display: inline-block;">
+          <li>Download <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&hl=en&gl=US" target="_blank">Google Authenticator</a> on your mobile.</li>
+          <li>Create a new account with <strong>setup key</strong> method.</li>
+          <li>Provide the required details (name, secret key).</li>
+          <li>Scan the QR CODE</li>
+          <li>Submit the generated key in the form.</li>
+    </ul>
+  </div>
+<!-- image of the QR code-->
+    <img src ="data:image/jpeg;base64,{{ img_data }}" width ='400' height = '500' class = 'centerImage', alt="">
+<!-- allow use to enter the 2fa-->
+  <form id="twoFAForm"  name = 2fa>
+    <div class="mb-3">
+      <input autocomplete="off" autofocus class="form-control mx-auto w-auto" id="OTP" name="OTP" placeholder="OTP" type="text" required >
+    </div>
+    <button class="btn btn-primary submitAuth " type="submit" >Authenticate</button>
+  </form>
+  <p  id ="statusMsg" style="margin-left: 38%" class = error >{{ status }}</p>
+
+  <script>
+
+    // Helper to convert Base64 back to ArrayBuffer (array of binary)
+    function base64ToArrayBuffer(base64) {
+    const binaryString = atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes.buffer;
+    }
+
+    function arrayBufferToBase64(buffer) {
+      let binary = '';
+      const bytes = new Uint8Array(buffer);
+      bytes.forEach(b => binary += String.fromCharCode(b));
+      return btoa(binary);
+    }
+
+  // encrypt private key into chunks
+  function chunkAndEncryptRSAKey(privateKeyStr, aesKeyRaw) {
+
+  function flattenMatrix(matrix) {
+    return matrix.flat();
+  } 
+
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(privateKeyStr);
+
+  const encryptedChunks = [];
+
+  for (let i = 0; i < bytes.length; i += 16) {
+      let chunk = bytes.slice(i, i + 16);
+      let chunkArr = Array.from(chunk);
+
+      // Pad if less than 16 bytes
+      while (chunkArr.length < 16) {
+          chunkArr.push(0x00);
+      }
+
+      // Convert to 4x4 matrix
+      const matrix = [
+          [chunkArr[0], chunkArr[4], chunkArr[8],  chunkArr[12]],
+          [chunkArr[1], chunkArr[5], chunkArr[9],  chunkArr[13]],
+          [chunkArr[2], chunkArr[6], chunkArr[10], chunkArr[14]],
+          [chunkArr[3], chunkArr[7], chunkArr[11], chunkArr[15]]
+      ];
+
+      const encryptedMatrix = AES_encrypt(matrix, aesKeyRaw);
+      encryptedChunks.push(flattenMatrix(encryptedMatrix));
+  }
+
+  return encryptedChunks;
+}
+    document.getElementById('twoFAForm').addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+      // get the OTP and the the status response
+      const otp = document.getElementById('OTP').value;
+      const statusMsg = document.getElementById('statusMsg');
+    
+
+      // get the response when the OTP is sent to the backend 
+      const response = await fetch('/register_2fa', {
+        method: 'POST',
+        // header specifies that the data is being sent like a form
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        // body specifies the structures of the contents being sent - in this case key:value
+        body: new URLSearchParams({ OTP: otp })
+      });
+
+      // parese the response as a json 
+      const data = await response.json();
+
+      // if the response is successful, let the user know and tell them that keys are being generated
+      if (data.status === '2fa_success') {
+        statusMsg.textContent = '2FA success! Generating keys...';
+        // generate the keys
+        const keys = await generateRSAKeys();
+
+        const publicKeyString = keys.e;
+        const nValue = keys.n;
+        
+        // get the AES key from storage
+        const aesKeyBase64 = sessionStorage.getItem('AES_KEY');
+        const aesKeyRaw = new Uint8Array(base64ToArrayBuffer(aesKeyBase64));
+        const aesKeyArray = Array.from(aesKeyRaw);
+
+        console.log(keys.d)
+        console.log(aesKeyArray)
+
+        // Encrypt private key using your AES function
+        const encryptedPrivateKey = chunkAndEncryptRSAKey(keys.d, aesKeyArray);
+
+        // Convert each encrypted chunk (array of numbers) to Base64 string
+        const encryptedPrivateKeyBase64 = encryptedPrivateKey.map(chunk => {
+            return arrayBufferToBase64(new Uint8Array(chunk));
+        });
+
+
+        console.log("Encrypted private key:", encryptedPrivateKey);
+
+        // convert bigInts to strings for type saftey 
+        const safeEncryptedPrivateKey = encryptedPrivateKeyBase64.map(element => element.toString());
+         
+        // Send encrypted private key to backend
+        const sendKeyResponse = await fetch('/store_encrypted_key', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ encryptedPrivateKey: safeEncryptedPrivateKey, publicKey : publicKeyString.toString(), nValue : nValue.toString() })
+        });
+
+        const sendKeyData = await sendKeyResponse.json();
+
+        if(sendKeyData.status === 'success') {
+          statusMsg.textContent = 'Keys stored securely! Registration complete.';
+          window.location.href = '/mainMessage';
+        } else {
+          statusMsg.textContent = 'Error storing keys on server.';
+        }
+      }
+      else {
+        statusMsg.textContent = '2FA unsuccessful, please try again'
+      }
+    })
+  </script>
+
+{% endblock %}
+    
+     
+
+

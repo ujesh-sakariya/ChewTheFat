@@ -1,0 +1,159 @@
+{% extends "layout.html" %}
+
+{% block title %} 
+    Manage Friends
+{% endblock %}
+
+{% block head %}
+<script>
+    // Array to store the indices of clicked buttons
+    var clickedIndices = [];
+    var clickedIndices2 = [];
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get all elements with the class 'chat-button'
+        var buttons = document.querySelectorAll('.chat-button');
+        var buttons2 = document.querySelectorAll('.chat-button2');
+        let confirm = document.getElementById('changes');
+
+
+        // Add a click event listener to each button
+        buttons.forEach(function(button, index) {
+            button.addEventListener('click', function() {
+                // Log or perform any action with the clicked button's index
+                console.log('Button clicked at index:', index);
+                button.classList.toggle('highlight');
+                // Check if the index is in the array
+                if (clickedIndices.includes(index)) {
+                    // If it is, remove it from the array
+                    const indexPosition = clickedIndices.indexOf(index); // Find the position
+                    clickedIndices.splice(indexPosition, 1); // Remove the element
+                } else {
+                    // If it is not, add it to the array
+                    clickedIndices.push(index);
+                }
+             });
+        });
+
+        // Add a click event listener to each button
+        buttons2.forEach(function(button, index) {
+            button.addEventListener('click', function() {
+                console.log('Button clicked at index:', index);
+
+
+                // Store the index in the array
+                button.classList.toggle('highlight');
+                // Check if the index is in the array
+                if (clickedIndices2.includes(index)) {
+                    // If it is, remove it from the array
+                    const indexPosition = clickedIndices2.indexOf(index); // Find the position
+                    clickedIndices2.splice(indexPosition, 1); // Remove the element
+                } else {
+                    // If it is not, add it to the array
+                    clickedIndices2.push(index);
+                }
+            });
+        });
+
+        document.getElementById('submitChangesButton').addEventListener('click', function() {
+            submitchanges();
+            confirm.textContent = 'The changes you have made have been applied'
+
+
+        });
+    });
+
+    function submitchanges() {
+        fetch('friendslist_changes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ button_indexes: clickedIndices, button_indexes2: clickedIndices2 })  
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data.result);
+        })
+        .catch(error => console.error('Error:', error));
+    }
+</script>
+{% endblock %}
+
+
+{% block main %}
+
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <!-- Search bar so users can find people -->
+            <form action="findFriends" name="search" method="post">
+                <div class="d-flex mb-3">
+                    <input autocomplete="off" autofocus class="form-control me-2" id="search" name="search" placeholder="Search" type="text">
+                    <button class="btn btn-primary" type="submit">Search</button>
+                </div>
+            </form>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Results</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if accounts %}
+                        {% for acc in accounts %}
+                            <tr>
+                                <td>{{ acc }}</td>
+                                {% if status[loop.index0] == 0 %}
+                                    <td><button class="btn btn-primary chat-button w-100" type="button">Add Friend</button></td>
+                                {% elif status[loop.index0] == 1 %}
+                                    <td><button class="btn btn-secondary chat-button w-100" type="button" disabled>Pending</button></td>
+                                {% elif status[loop.index0] == 2 %}
+                                    <td><button class="btn btn-success chat-button w-100" type="button">Add to Chat</button></td>
+                                {% endif %}
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td>No results found</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="d-flex justify-content-end mb-3">
+                <form action="backtomessaging" name="return">
+                    <button class="btn btn-outline-secondary" type="submit">Back</button>
+                </form>
+            </div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Friend Requests</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if freq %}
+                        {% for FQ in freq %}
+                            <tr>
+                                <td>{{ FQ }}</td>
+                                <td><button class="btn btn-success chat-button2 w-100 mb-1" type="button">Accept</button></td>
+                                <td><button class="btn btn-danger chat-button2 w-100" type="button">Reject</button></td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td>No results found</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="d-flex flex-column align-items-center">
+        <button id="submitChangesButton" class="btn btn-primary mb-2" type="button" style="width: 180px;">Submit</button>
+        <p id="changes" class="error"></p>
+    </div>
+</div>
+{% endblock %}

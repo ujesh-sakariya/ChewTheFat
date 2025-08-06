@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+.vscode/
+flask_session/
+Test videos
+.env

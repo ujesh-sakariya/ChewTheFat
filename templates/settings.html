@@ -1,0 +1,87 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Settings 
+{% endblock %}
+
+{% block head %}
+<script>
+    function validateForm() {
+        // set the variables for the username and password
+        let original = document.forms["changePassword"]["originalpassword"].value;
+        let newp = document.forms["changePassword"]["newpassword"].value;
+        // check if a usernsame and password is entered 
+        if (original == "") {
+            alert("Username must be filled out");
+            return false;
+        }
+            if (newp == "") {
+            alert("password must be filled out");
+            return false;
+        }
+
+        // creating a variable of all the special characters
+        var specialchar = "\~!@#$%^&*+=-[];,/{}|:<>?()/._";
+        var numbers = "0123456789";
+        var acceptable = false;
+        var acceptable2 = false;
+
+
+        // iterate through each character in the password
+            for (var i = 0; i < newp.length; i++)
+            {
+            // if the value for for any of the characters in password is in the string specialchar
+                if (specialchar.indexOf(newp.charAt(i)) != -1)
+                {
+                    acceptable = true;
+                }
+
+            // if the value for for any of the characters in password is in the string numbers
+                if (numbers.indexOf(newp.charAt(i)) != -1)
+                {
+                    acceptable2 = true;
+                }
+
+            }
+            // if the password has special characters
+            if(acceptable ==  false)
+            {
+                alert("password must contain special characters");
+                return false;
+            }
+            // if the password has numbers
+            if(acceptable2 ==  false)
+            {
+                alert("password must contain numbers");                
+                return false;
+            }
+
+            // check the length is 8 or greater
+
+            if( newp.length <= 7)
+            {
+                alert("password must be 8 characters or longer");
+                return false;
+            }
+    }
+    
+</script>
+{% endblock %}
+
+{% block main %}
+<br>
+<!-- form that takes in the users username and password and send it to the login route -->
+<form action="/changePassword" method="post" name = changePassword onsubmit=" return validateForm()">
+    <div class="mb-3">
+        <!-- Input box to allow the user to enter their original password-->
+        <input autocomplete="off" autofocus class="form-control mx-auto w-auto" id="originalpassword" name="originalpassword" placeholder="Original Password" type="text" required >
+    </div>
+    <div class="mb-3">
+        <!-- Input box to all the user to enter their new password-->
+        <input class="form-control mx-auto w-auto " id="newpassword" name="newpassword" placeholder="New Password" type="password" required>
+    </div>
+    <button class="btn btn-primary" style="margin-left: 46%" type="submit">Change Password</button>
+</form>
+<!-- allow the status t obe displayed -->
+<p style="margin-left: 43%" class = error >{{ status }}</p>
+{% endblock %}

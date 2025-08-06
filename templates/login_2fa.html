@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    login2FA
+{% endblock %}
+
+{% block main %}
+<div class="d-flex justify-content-center align-items-center min-vh-100">
+  <div class="centreForm text-center">
+    <p class="instructions mb-4">Please open your Google Authenticator app and enter the TOTP registered with this account.</p>
+    <form action="/login_2fa" method="post" name="login_2fa">
+      <div class="mb-3">
+        <input autocomplete="off" autofocus class="form-control form-control-lg text-center" id="login_TOTP" name="login_TOTP" placeholder="TOTP" type="text" required style="font-size:1.5rem; max-width: 250px; margin: 0 auto;">
+      </div>
+      <button class="btn btn-primary submitAuth" type="submit">Validate</button>
+    </form>
+    <p class="error mt-3">{{ status }}</p>
+  </div>
+</div>
+{% endblock %}
