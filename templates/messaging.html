@@ -54,7 +54,7 @@
                     <small id="mode-warning" style="color: red; display: none;">Private mode disabled for group chats</small>
                     </div>
                     <div class="d-flex justify-content-end mb-2">
-                        <button class="btn btn-danger btn-clear-convo ms-auto py-1 px-3" style="font-size: 0.95rem;">Clear Conversation</button>
+                        <button id='clearconversation' class ="btn btn-danger btn-clear-convo ms-auto py-1 px-3" style="font-size: 0.95rem;">Clear Conversation</button>
                     </div>
                 </div>
                 <div class="col-md-9 scrollable-div" id='allthechats' style="width: 800px; height: 400px; overflow-y: auto; overflow-x: hidden;">
@@ -153,32 +153,70 @@
         const chatContainer = document.getElementById("allthechats");
         chatContainer.innerHTML = "";  // Clear old messages
 
-        if (data.message && data.message.length > 0) {
-            data.message.forEach(msg => {
-                const name = msg[0];
-                const messageText = msg[1];
-                const isCurrentUser = msg[2] === 1;
+    if (data.message && data.message.length > 0) {
+    data.message.forEach(msg => {
+        const name = msg[0];
+        const messageText = msg[1];
+        const isCurrentUser = msg[2] === 1;
 
-                const nameP = document.createElement("p");
-                nameP.textContent = name;
-                nameP.style.textAlign = isCurrentUser ? "right" : "left";
+        // Container for entire message + name
+        const messageWrapper = document.createElement("div");
+        messageWrapper.style.display = "flex";
+        messageWrapper.style.flexDirection = "column";
+        messageWrapper.style.alignItems = isCurrentUser ? "flex-end" : "flex-start";
+        messageWrapper.style.marginBottom = "15px";
 
-                const messageDiv = document.createElement("div");
-                messageDiv.className = isCurrentUser ? "message-container2" : "message-container";
-                messageDiv.innerHTML = `<p>${messageText}</p>`;
+        // Name above the message
+        const nameP = document.createElement("p");
+        nameP.textContent = name;
+        nameP.style.margin = "0 10px 5px 10px";
+        nameP.style.fontWeight = "bold";
+        nameP.style.textAlign = isCurrentUser ? "right" : "left";
 
-                chatContainer.appendChild(nameP);
-                chatContainer.appendChild(messageDiv);
+        // Container for message and button with column flex
+        const messageAndButtonContainer = document.createElement("div");
+        messageAndButtonContainer.style.display = "flex";
+        messageAndButtonContainer.style.flexDirection = "column";
+        messageAndButtonContainer.style.alignItems = isCurrentUser ? "flex-end" : "flex-start";
 
-                if (isCurrentUser) {
-                    const deleteBtn = document.createElement("button");
-                    deleteBtn.className = "btn btn-primary delete-message";
-                    deleteBtn.textContent = "Delete";
-                    deleteBtn.style.marginLeft = "700px";
-                    deleteBtn.type = "button";
-                    chatContainer.appendChild(deleteBtn);
-                }
-            });
+        // Message bubble
+        const messageSpan = document.createElement("span");
+        messageSpan.style.display = "inline-block";
+        messageSpan.style.maxWidth = "60vw";
+        messageSpan.style.minWidth = "50px";
+        messageSpan.style.padding = "10px";
+        messageSpan.style.borderRadius = "10px";
+        messageSpan.style.backgroundColor = isCurrentUser ? "#007bff" : "#e4e6eb";
+        messageSpan.style.color = isCurrentUser ? "#fff" : "#000";
+        messageSpan.style.wordBreak = "break-word";
+        messageSpan.style.whiteSpace = "normal";
+        messageSpan.style.boxSizing = "border-box";
+
+        messageSpan.textContent = messageText;
+
+        messageAndButtonContainer.appendChild(messageSpan);
+
+        // Delete button for current user
+        if (isCurrentUser) {
+            const deleteBtn = document.createElement("button");
+            deleteBtn.className = "btn btn-primary delete-message";
+            deleteBtn.textContent = "Delete";
+            deleteBtn.type = "button";
+            deleteBtn.style.marginTop = "5px";
+            deleteBtn.style.alignSelf = "flex-end";
+
+            messageAndButtonContainer.appendChild(deleteBtn);
+        }
+
+        // Append name and message container
+        messageWrapper.appendChild(nameP);
+        messageWrapper.appendChild(messageAndButtonContainer);
+
+        chatContainer.appendChild(messageWrapper);
+    });
+
+
+        
         } else {
             chatContainer.innerHTML = "<p>No previous messages</p>";
             }
@@ -350,7 +388,7 @@
 }
 
     
-    const sendButton = document.getElementById('messagetosend');
+    const sendButton = document.getElementById('sendBtn');
     sendButton.addEventListener('click',sendMessage)
 
     const messageInput = document.getElementById('send');
@@ -362,33 +400,63 @@
         }
     });
     
-    function displayOwnMessage(plainTextMessage,selectedMode) {
+   function displayOwnMessage(plainTextMessage, selectedMode) {
     const Div = document.getElementById("allthechats");
 
-    const messageP = document.createElement("p");
+    // Wrapper for the entire message (name + message + delete button)
+    const messageWrapper = document.createElement("div");
+    messageWrapper.style.display = "flex";
+    messageWrapper.style.flexDirection = "column";
+    messageWrapper.style.alignItems = "flex-end";  // Own messages aligned right
+    messageWrapper.style.marginBottom = "15px";
+
+    // Name element
     const name = document.createElement("p");
-
     name.textContent = sessionStorage.getItem('name') || "You";
+    name.style.margin = "0 10px 5px 10px";
+    name.style.fontWeight = "bold";
+    name.style.textAlign = "right";
 
-    messageP.textContent = plainTextMessage;
+    // Container for message and delete button
+    const messageAndButtonContainer = document.createElement("div");
+    messageAndButtonContainer.style.display = "flex";
+    messageAndButtonContainer.style.flexDirection = "column";
+    messageAndButtonContainer.style.alignItems = "flex-end";
 
-    messageP.classList.add("message-container2");
-    name.style.textAlign = 'right';
-    Div.appendChild(name);
-    Div.appendChild(messageP);
-    
-    if (selectedMode != 'private') {
+    // Message bubble (styled span for consistent look)
+    const messageSpan = document.createElement("span");
+    messageSpan.textContent = plainTextMessage;
+    messageSpan.style.display = "inline-block";
+    messageSpan.style.maxWidth = "60vw";
+    messageSpan.style.minWidth = "50px";
+    messageSpan.style.padding = "10px";
+    messageSpan.style.borderRadius = "10px";
+    messageSpan.style.backgroundColor = "#007bff";
+    messageSpan.style.color = "#fff";
+    messageSpan.style.wordBreak = "break-word";
+    messageSpan.style.whiteSpace = "normal";
+    messageSpan.style.boxSizing = "border-box";
+
+    messageAndButtonContainer.appendChild(messageSpan);
+
+    if (selectedMode !== 'private') {
         const deleteB = document.createElement('button');
         deleteB.classList.add("btn", "btn-primary", "delete-message");
-        deleteB.setAttribute('type', 'submit');
+        deleteB.type = 'button';  // submit is not typical for buttons outside forms
         deleteB.textContent = 'Delete';
-        deleteB.style.marginLeft = '700px';
-        Div.appendChild(deleteB);
+        deleteB.style.marginTop = "5px";
+        deleteB.style.alignSelf = "flex-end";
+
+        messageAndButtonContainer.appendChild(deleteB);
     }
+
+    messageWrapper.appendChild(name);
+    messageWrapper.appendChild(messageAndButtonContainer);
+
+    Div.appendChild(messageWrapper);
 
     Div.scrollTop = Div.scrollHeight;
-
-    }
+}
 
 
     // Helper to convert Base64 back to ArrayBuffer (array of binary)
@@ -482,28 +550,95 @@
             messageP.textContent = message_details.message;
         }
 
-        // Style message
-        if (message_details.ID == sessionId) {
-            messageP.classList.add("message-container2");
-            name.style.textAlign = 'right';
-            Div.appendChild(name);
-            Div.appendChild(messageP);
+       if (message_details.ID == sessionId) {
+    // Wrapper for current user message
+    const messageWrapper = document.createElement("div");
+    messageWrapper.style.display = "flex";
+    messageWrapper.style.flexDirection = "column";
+    messageWrapper.style.alignItems = "flex-end";  // Right align own messages
+    messageWrapper.style.marginBottom = "15px";
 
-            const deleteB = document.createElement('button');
-            deleteB.classList.add("btn", "btn-primary", "delete-message");
-            deleteB.setAttribute('type', 'submit');
-            deleteB.textContent = 'Delete';
-            deleteB.style.marginLeft = '700px';
-            Div.appendChild(deleteB);
+    // Name element
+    name.style.margin = "0 10px 5px 10px";
+    name.style.fontWeight = "bold";
+    name.style.textAlign = "right";
 
-        } else {
-            messageP.classList.add("message-container");
-            name.style.textAlign = 'left';
-            Div.appendChild(name);
-            Div.appendChild(messageP);
-        }
+    // Container for message and delete button
+    const messageAndButtonContainer = document.createElement("div");
+    messageAndButtonContainer.style.display = "flex";
+    messageAndButtonContainer.style.flexDirection = "column";
+    messageAndButtonContainer.style.alignItems = "flex-end";
 
-        Div.scrollTop = Div.scrollHeight;
+    // Message bubble styling
+    messageP.classList.add("message-container2");
+    messageP.style.display = "inline-block";
+    messageP.style.maxWidth = "60vw";
+    messageP.style.minWidth = "50px";
+    messageP.style.padding = "10px";
+    messageP.style.borderRadius = "10px";
+    messageP.style.backgroundColor = "#007bff";
+    messageP.style.color = "#fff";
+    messageP.style.wordBreak = "break-word";
+    messageP.style.whiteSpace = "normal";
+    messageP.style.boxSizing = "border-box";
+    messageP.style.margin = "0";
+
+    // Append message to container
+    messageAndButtonContainer.appendChild(messageP);
+
+    // Delete button below message
+    const deleteB = document.createElement('button');
+    deleteB.classList.add("btn", "btn-primary", "delete-message");
+    deleteB.type = 'button';  // Use button type, not submit
+    deleteB.textContent = 'Delete';
+    deleteB.style.marginTop = "5px";
+    deleteB.style.alignSelf = "flex-end";
+
+    messageAndButtonContainer.appendChild(deleteB);
+
+    // Append name and message/button container to wrapper
+    messageWrapper.appendChild(name);
+    messageWrapper.appendChild(messageAndButtonContainer);
+
+    // Append entire wrapper to Div
+    Div.appendChild(messageWrapper);
+
+} else {
+    // Wrapper for other user's message
+    const messageWrapper = document.createElement("div");
+    messageWrapper.style.display = "flex";
+    messageWrapper.style.flexDirection = "column";
+    messageWrapper.style.alignItems = "flex-start";  // Left align other messages
+    messageWrapper.style.marginBottom = "15px";
+
+    // Name element
+    name.style.margin = "0 10px 5px 10px";
+    name.style.fontWeight = "bold";
+    name.style.textAlign = "left";
+
+    // Message bubble styling
+    messageP.classList.add("message-container");
+    messageP.style.display = "inline-block";
+    messageP.style.maxWidth = "60vw";
+    messageP.style.minWidth = "50px";
+    messageP.style.padding = "10px";
+    messageP.style.borderRadius = "10px";
+    messageP.style.backgroundColor = "#e4e6eb";
+    messageP.style.color = "#000";
+    messageP.style.wordBreak = "break-word";
+    messageP.style.whiteSpace = "normal";
+    messageP.style.boxSizing = "border-box";
+    messageP.style.margin = "0";
+
+    // Append name and message to wrapper
+    messageWrapper.appendChild(name);
+    messageWrapper.appendChild(messageP);
+
+    // Append wrapper to Div
+    Div.appendChild(messageWrapper);
+}
+
+Div.scrollTop = Div.scrollHeight;
     })
     .catch(console.error);
 });

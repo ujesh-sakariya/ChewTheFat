@@ -4,17 +4,19 @@ import pickle
 import os
 
 def ensure_files_exist():
-    if not os.path.exists("friendsList.pkl"):
+    if not os.path.exists("friendsList.pkl") and not os.path.exists("convos.pkl") and not os.path.exists("chats.pkl"):
         with open("friendsList.pkl", "wb") as f:
             pickle.dump([], f)  # 2D list (adjacency matrix) for friends
-
-    if not os.path.exists("convos.pkl"):
         with open("convos.pkl", "wb") as f:
             pickle.dump({}, f)  # Dict for user ID to chat ID list
-
-    if not os.path.exists("chats.pkl"):
         with open("chats.pkl", "wb") as f:
             pickle.dump({}, f)  # Dict for chat ID to list of users
+        #dummy user for index 0 
+        new_user(0)
+    
+
+
+
 '''friendsList - who is friends with who 
 convos - a list of all the chat ids that a person belongs to
 a list of all the chat ids and who is in which one'''
@@ -152,12 +154,12 @@ def find_id_for_chat(chat_id):
     return ids
 
 
-with open('convos.pkl', 'rb+') as file: 
+'''with open('convos.pkl', 'rb+') as file: 
         # Call load method to deserialze 
             chats = pickle.load(file)
             print(chats)
 
-'''with open('chats.pkl', 'rb+') as file: 
+with open('chats.pkl', 'rb+') as file: 
         # Call load method to deserialze 
             chats = pickle.load(file)
             print(chats)
