@@ -59,3 +59,27 @@ Chew The Fat is a secure, real-time messaging app that combines RSA and AES encr
 - **Data Persistence:** Pickle (`.pkl`) files to manage and maintain the friends system  
 - **Encryption:** Custom-implemented RSA and AES algorithms for end-to-end encryption  
 
+## Demo Photos And Videos
+**On the homepage, you can login or register an account**
+![Alt Text](walkthrough/intro.png)
+**You will then be asked to sign up for 2FA if you are creating a new account or just enter your TOTO if you are logging in**
+![Alt Text](walkthrough/2FA.png)
+**You can send Friend Requests**
+![Alt Text](walkthrough/FindFriends.png)
+**Manage your friend requests**
+![Alt Text](walkthrough/ViewFriendReq.png)
+**Add your friends to chats**
+![Alt Text](walkthrough/AddtoChat.png)
+**See when your friends are on the chat**
+![Alt Text](walkthrough/MessagingScreen.png)
+**In the video you can see**
+- Being able to choose between encrypted/ephemeral messages and unencryped/stored messages
+- messages being sent in real time using websockets
+- delete messages
+- delete entire conversations
+
+**Complete autonomy of how your private conversations are stored**
+![Alt Text](walkthrough/walkthrough.gif)
+
+
+
