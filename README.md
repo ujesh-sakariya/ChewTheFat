@@ -66,8 +66,9 @@ Chew The Fat is a secure, real-time messaging app that combines RSA and AES encr
 - delete messages
 - delete entire conversations
 
-**Complete autonomy of how your private conversations are stored**
+**Complete autonomy of how your private conversations are stored and sent**
 ![Alt Text](walkthrough/walkthrough.gif)
+
 **On the homepage, you can login or register an account**
 ![Alt Text](walkthrough/intro.png)
 **You will then be asked to sign up for 2FA if you are creating a new account or just enter your TOTO if you are logging in**
