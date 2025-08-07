@@ -550,7 +550,7 @@
             messageP.textContent = message_details.message;
         }
 
-       if (message_details.ID == sessionId) {
+     if (message_details.ID == sessionId) {
     // Wrapper for current user message
     const messageWrapper = document.createElement("div");
     messageWrapper.style.display = "flex";
@@ -569,7 +569,7 @@
     messageAndButtonContainer.style.flexDirection = "column";
     messageAndButtonContainer.style.alignItems = "flex-end";
 
-    // Message bubble styling
+    // Style the existing decrypted messageP
     messageP.classList.add("message-container2");
     messageP.style.display = "inline-block";
     messageP.style.maxWidth = "60vw";
@@ -583,24 +583,24 @@
     messageP.style.boxSizing = "border-box";
     messageP.style.margin = "0";
 
-    // Append message to container
+    // Append message
     messageAndButtonContainer.appendChild(messageP);
 
-    // Delete button below message
+    // Delete button
     const deleteB = document.createElement('button');
     deleteB.classList.add("btn", "btn-primary", "delete-message");
-    deleteB.type = 'button';  // Use button type, not submit
+    deleteB.type = 'button';
     deleteB.textContent = 'Delete';
     deleteB.style.marginTop = "5px";
     deleteB.style.alignSelf = "flex-end";
 
     messageAndButtonContainer.appendChild(deleteB);
 
-    // Append name and message/button container to wrapper
+    // Append name and message+button to wrapper
     messageWrapper.appendChild(name);
     messageWrapper.appendChild(messageAndButtonContainer);
 
-    // Append entire wrapper to Div
+    // Append full wrapper to chat container
     Div.appendChild(messageWrapper);
 
 } else {
@@ -608,15 +608,15 @@
     const messageWrapper = document.createElement("div");
     messageWrapper.style.display = "flex";
     messageWrapper.style.flexDirection = "column";
-    messageWrapper.style.alignItems = "flex-start";  // Left align other messages
+    messageWrapper.style.alignItems = "flex-start";  // Left align others
     messageWrapper.style.marginBottom = "15px";
 
-    // Name element
+    // Style name
     name.style.margin = "0 10px 5px 10px";
     name.style.fontWeight = "bold";
     name.style.textAlign = "left";
 
-    // Message bubble styling
+    // Style the existing decrypted messageP
     messageP.classList.add("message-container");
     messageP.style.display = "inline-block";
     messageP.style.maxWidth = "60vw";
@@ -630,15 +630,16 @@
     messageP.style.boxSizing = "border-box";
     messageP.style.margin = "0";
 
-    // Append name and message to wrapper
+    // Append to wrapper
     messageWrapper.appendChild(name);
     messageWrapper.appendChild(messageP);
 
-    // Append wrapper to Div
+    // Append to chat
     Div.appendChild(messageWrapper);
 }
 
 Div.scrollTop = Div.scrollHeight;
+
     })
     .catch(console.error);
 });
