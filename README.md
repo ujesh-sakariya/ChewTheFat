@@ -39,11 +39,12 @@ Chew The Fat is a secure, real-time messaging app that combines RSA and AES encr
  
   - **E2E Encryption Flow**:
   - RSA key pair fully implemented and coded from scratch, generated per user upon registration
-  - AES encryption algorithm also fully coded manually, used to encrypt the RSA private key in 16-byte blocks
+  - AES encryption algorithm also **fully coded manually**, used to encrypt the RSA private key in 16-byte blocks
   - AES key derived from the user's password using SHA-256
   - The encrypted private key is securely stored in the database
   - Upon selecting E2E mode, the encrypted key is sent to the frontend and decrypted locally
   - This approach guarantees that message content remains private and inaccessible to the server
+  - To find the code for the algorithms follow the paths **static/js**
 
 
 - **2FA Integration**:
@@ -73,7 +74,7 @@ Chew The Fat is a secure, real-time messaging app that combines RSA and AES encr
 
 **On the homepage, you can login or register an account**
 ![Alt Text](walkthrough/intro.png)
-**You will then be asked to sign up for 2FA if you are creating a new account or just enter your TOTO if you are logging in**
+**You will then be asked to sign up for 2FA if you are creating a new account or just enter your TOTP if you are logging in**
 ![Alt Text](walkthrough/2FA.png)
 **You can send Friend Requests**
 ![Alt Text](walkthrough/FindFriends.png)
